@@ -19,15 +19,12 @@ jobs:
       - name: Setup .NET 9
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.100'  # 固定具体版本
+          dotnet-version: '9.0.100'
       
-      - name: Install MAUI
+      - name: Install MAUI (使用 manifest)
         run: |
-          # 先卸载可能冲突的版本
-          dotnet workload uninstall maui maccatalyst || true
-          # 安装稳定版本
-          dotnet workload install maui --version 9.0.0
-          dotnet workload install maui-maccatalyst --version 9.0.0
+          # 使用特定 manifest 版本
+          dotnet workload install maui --source https://api.nuget.org/v3/index.json
       
       - name: Restore
         run: dotnet restore CsvProcessor.csproj
