@@ -16,15 +16,15 @@ jobs:
       - name: Select Xcode 15.4
         run: sudo xcode-select -s /Applications/Xcode_15.4.app
       
-      - name: Setup .NET 9
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.100'
+          dotnet-version: '8.0.x'
       
-      - name: Install MAUI (使用 manifest)
+      - name: Install MAUI
         run: |
-          # 使用特定 manifest 版本
-          dotnet workload install maui --source https://api.nuget.org/v3/index.json
+          dotnet workload install maui
+          dotnet workload install maui-maccatalyst
       
       - name: Restore
         run: dotnet restore CsvProcessor.csproj
@@ -32,7 +32,7 @@ jobs:
       - name: Build
         run: |
           dotnet publish CsvProcessor.csproj \
-            -f net9.0-maccatalyst \
+            -f net8.0-maccatalyst \
             -c Release \
             -p:EnableCodeSigning=false \
             -p:EnablePackageSigning=false \
