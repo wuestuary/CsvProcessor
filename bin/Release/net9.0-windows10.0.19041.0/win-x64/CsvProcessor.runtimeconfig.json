@@ -1,0 +1,40 @@
+{
+  "runtimeOptions": {
+    "tfm": "net9.0",
+    "includedFrameworks": [
+      {
+        "name": "Microsoft.NETCore.App",
+        "version": "9.0.12"
+      }
+    ],
+    "configProperties": {
+      "Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability": true,
+      "System.ComponentModel.DefaultValueAttribute.IsSupported": false,
+      "System.ComponentModel.Design.IDesignerHost.IsSupported": false,
+      "System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization": false,
+      "System.ComponentModel.TypeDescriptor.IsComObjectDescriptorSupported": false,
+      "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+      "System.Resources.ResourceManager.AllowCustomResourceTypes": false,
+      "System.Resources.UseSystemResourceKeys": false,
+      "System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported": true,
+      "System.Runtime.InteropServices.BuiltInComInterop.IsSupported": false,
+      "System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting": false,
+      "System.Runtime.InteropServices.EnableCppCLIHostActivation": false,
+      "System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop": false,
+      "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false,
+      "System.Runtime.Loader.UseRidGraph": true,
+      "System.StartupHookProvider.IsSupported": false,
+      "System.Text.Encoding.EnableUnsafeUTF7Encoding": false,
+      "System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault": false,
+      "System.Threading.Thread.EnableAutoreleasePool": false,
+      "CSWINRT_USE_WINDOWS_UI_XAML_PROJECTIONS": false,
+      "Microsoft.Maui.RuntimeFeature.IsIVisualAssemblyScanningEnabled": false,
+      "Microsoft.Maui.RuntimeFeature.IsShellSearchResultsRendererDisplayMemberNameSupported": false,
+      "Microsoft.Maui.RuntimeFeature.IsQueryPropertyAttributeSupported": false,
+      "Microsoft.Maui.RuntimeFeature.IsImplicitCastOperatorsUsageViaReflectionSupported": false,
+      "Microsoft.Maui.RuntimeFeature.AreBindingInterceptorsSupported": true,
+      "Microsoft.Maui.RuntimeFeature.IsXamlCBindingWithSourceCompilationEnabled": true,
+      "Microsoft.Maui.RuntimeFeature.IsHybridWebViewSupported": false
+    }
+  }
+}

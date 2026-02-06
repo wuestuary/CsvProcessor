@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- MSIX 使用压缩 -->
+    <AppxPackageCompression>DX_FEATURED</AppxPackageCompression>
+  </PropertyGroup>
+</Project>

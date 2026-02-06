@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <application 
+        android:allowBackup="true" 
+        android:icon="@mipmap/appicon" 
+        android:roundIcon="@mipmap/appicon_round" 
+        android:supportsRtl="true"
+        android:label="CsvProcessor">
+        
+                <activity 
+            android:name="com.companyname.csvprocessor.MainActivity"
+            android:exported="true"
+            android:theme="@style/Maui.SplashTheme"
+            android:configChanges="screenSize|orientation|uiMode|screenLayout|smallestScreenSize|density"
+            android:windowSoftInputMode="adjustResize">
+            
+            <!-- 启动器图标 -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            
+            <!-- 1. 标准的 text/csv -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:mimeType="text/csv" />
+            </intent-filter>
+            
+            <!-- 2. application/csv -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:mimeType="application/csv" />
+            </intent-filter>
+            
+            <!-- 3. 通用的 content 协议 (如: content://...) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.csv" />
+            </intent-filter>
+
+            <!-- 4. 通用的 file 协议 (如: file:///...) - 关键补充 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="file" />
+                <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.csv" />
+                <data android:host="*" />
+            </intent-filter>
+
+            <!-- 5. 分享支持 -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/csv" />
+            </intent-filter>
+
+        </activity>
+
+    </application>
+    
+    <!-- 权限 -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
+                     android:maxSdkVersion="28" />
+    
+</manifest>

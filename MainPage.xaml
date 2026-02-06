@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CsvProcessor.MainPage">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="0">
+        
+        <!-- Row 0: 顶部标题 -->
+        <Label Grid.Row="0" 
+               Text="CSV 转 TSV 工具" 
+               FontSize="24" 
+               FontAttributes="Bold"
+               HorizontalOptions="Center"
+               Margin="0,10,0,5"
+               TextColor="{AppThemeBinding Light=#512BD4, Dark=White}"/>
+        
+        <!-- Row 1: 控制面板 -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="10" Padding="15,0,15,10">
+                
+                <Frame BorderColor="Gray" Padding="10">
+                    <VerticalStackLayout Spacing="10">
+                        
+                        <Grid RowDefinitions="*,*" ColumnDefinitions="*,*" RowSpacing="5" ColumnSpacing="5">
+                            <Button Grid.Row="0" Grid.Column="0" 
+                                    x:Name="OpenFileBtn" 
+                                    Text="打开 CSV" 
+                                    BackgroundColor="#7952B3"
+                                    TextColor="White"
+                                    Clicked="OnOpenFileClicked"
+                                    FontSize="Small" 
+                                    Padding="5"/>
+
+                            <Button Grid.Row="0" Grid.Column="1" 
+                                    x:Name="ConvertAndCopyBtn" 
+                                    Text="转换并复制" 
+                                    BackgroundColor="#512BD4"
+                                    TextColor="White"
+                                    Clicked="OnConvertAndCopyClicked"
+                                    FontSize="Small" 
+                                    Padding="5"/>
+
+                            <Button Grid.Row="1" Grid.ColumnSpan="2" 
+                                    x:Name="ClearBtn" 
+                                    Text="清空" 
+                                    BackgroundColor="#666"
+                                    TextColor="White"
+                                    Clicked="OnClearClicked"
+                                    FontSize="Small" 
+                                    Padding="5"/>
+                        </Grid>
+                        
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="5" VerticalOptions="Center">
+                            <Label Grid.Column="0" 
+                                   Text="列筛选:(如:1,2-3,5)" 
+                                   VerticalOptions="Center"
+                                   FontSize="Small"
+                                   MinimumWidthRequest="40"/>
+                            
+                            <Entry Grid.Column="1" 
+                                   x:Name="ColumnFilterEntry" 
+                                   Placeholder="1-6" 
+                                   Text="1-6"
+                                   TextChanged="OnFilterParamsChanged"
+                                   HorizontalOptions="Fill"
+                                   FontSize="Small"/>
+                            
+                            <Switch Grid.Column="2" 
+                                    x:Name="EnableFilterSwitch" 
+                                    IsToggled="True"
+                                    Toggled="OnFilterToggled"
+                                    VerticalOptions="Center"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Frame>
+                    
+                <Label x:Name="AndroidHint" 
+                       Text="💡 提示：可以对CSV文件用其他程序打开 → 选择CsvProcessor"
+                       IsVisible="false"
+                       TextColor="#2196F3"
+                       BackgroundColor="#E3F2FD"
+                       Padding="10"
+                       HorizontalOptions="Center"
+                       FontSize="12"/>
+                
+                <Label x:Name="StatusLabel" 
+                       Text="就绪" 
+                       TextColor="Green" 
+                       HorizontalOptions="Center"
+                       FontAttributes="Bold"
+                       FontSize="Small"/>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Row 2: 文本框 -->
+        <Grid Grid.Row="2" x:Name="EditorsGrid" 
+              RowDefinitions="*,*" 
+              RowSpacing="10" 
+              Padding="15,0,15,10">
+            
+            <Frame Grid.Row="0" x:Name="Frame1" 
+                   BorderColor="#512BD4" 
+                   Padding="10"
+                   VerticalOptions="FillAndExpand">
+                <Grid RowDefinitions="Auto,*">
+                    <Label Grid.Row="0" Text="原始 CSV" FontAttributes="Bold" FontSize="Small"/>
+                    <ScrollView Grid.Row="1">
+                        <Editor x:Name="OriginalText" 
+                                AutoSize="TextChanges"
+                                MinimumHeightRequest="50"
+                                IsReadOnly="True"
+                                Placeholder="原始内容..."
+                                FontSize="Small"/>
+                    </ScrollView>
+                </Grid>
+            </Frame>
+
+            <Frame Grid.Row="1" x:Name="Frame2" 
+                   BorderColor="#2B0B98" 
+                   Padding="10"
+                   VerticalOptions="FillAndExpand">
+                <Grid RowDefinitions="Auto,*">
+                    <Label Grid.Row="0" Text="处理 TSV" FontAttributes="Bold" FontSize="Small"/>
+                    <ScrollView Grid.Row="1">
+                        <Editor x:Name="ProcessedText" 
+                                AutoSize="TextChanges"
+                                MinimumHeightRequest="50"
+                                IsReadOnly="True"
+                                Placeholder="处理内容..."
+                                FontSize="Small"/>
+                    </ScrollView>
+                </Grid>
+            </Frame>
+        </Grid>
+
+        <Button Grid.Row="3" 
+                x:Name="ExitBtn"
+                Text="退出应用" 
+                BackgroundColor="#D32F2F"
+                TextColor="White"
+                Clicked="OnExitClicked"
+                Margin="20,10,20,20"
+                Padding="10"/>
+    </Grid>
+</ContentPage>

@@ -1,0 +1,41 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\wuest\\source\\repos\\CsvProcessor\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{F8FC8B86-55E1-4061-BC5B-B8BB4352FD1A}|CsvProcessor.csproj|c:\\users\\wuest\\source\\repos\\csvprocessor\\csvprocessor.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{F8FC8B86-55E1-4061-BC5B-B8BB4352FD1A}|CsvProcessor.csproj|solutionrelative:csvprocessor.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "CsvProcessor.csproj",
+              "DocumentMoniker": "C:\\Users\\wuest\\source\\repos\\CsvProcessor\\CsvProcessor.csproj",
+              "RelativeDocumentMoniker": "CsvProcessor.csproj",
+              "ToolTip": "C:\\Users\\wuest\\source\\repos\\CsvProcessor\\CsvProcessor.csproj",
+              "RelativeToolTip": "CsvProcessor.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAFwAAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-02-04T09:43:16.057Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
