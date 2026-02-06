@@ -7,26 +7,21 @@ on:
 
 jobs:
   build-macos:
-    runs-on: macos-14
+    runs-on: macos-13  # 降级镜像
     
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
-      - name: Select Xcode 15.4
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app
       
       - name: Setup .NET 9
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.100'
       
-      - name: Install MAUI (降级到兼容 Xcode 15.4 的版本)
+      - name: Install MAUI
         run: |
-          # 清理并安装特定版本
-          sudo rm -rf ~/.dotnet/sdk-manifests
-          dotnet workload install maui --version 8.0.100
-          dotnet workload install maui-maccatalyst --version 8.0.100
+          dotnet workload install maui
+          dotnet workload install maui-maccatalyst
       
       - name: Restore
         run: dotnet restore CsvProcessor.csproj
