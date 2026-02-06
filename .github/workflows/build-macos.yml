@@ -7,11 +7,14 @@ on:
 
 jobs:
   build-macos:
-    runs-on: macos-14
+    runs-on: macos-15  # 升级镜像，自带 Xcode 16
     
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      
+      - name: Select Xcode 16
+        run: sudo xcode-select -s /Applications/Xcode_16.app
       
       - name: Setup .NET 9
         uses: actions/setup-dotnet@v4
@@ -24,11 +27,11 @@ jobs:
           dotnet workload install maui-maccatalyst
       
       - name: Restore Packages
-        run: dotnet restore
+        run: dotnet restore CsvProcessor.csproj  # 指定项目
       
       - name: Build macOS App
         run: |
-          dotnet publish \
+          dotnet publish CsvProcessor.csproj \
             -f net9.0-maccatalyst \
             -c Release \
             -p:EnableCodeSigning=false \
@@ -36,7 +39,7 @@ jobs:
             -p:CreatePackage=true \
             -p:PublishTrimmed=true \
             -p:TrimMode=partial \
-            -o ./output
+            -p:OutputPath=./output  # 改为项目属性
       
       - name: Zip for Distribution
         run: |
