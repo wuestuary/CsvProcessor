@@ -7,16 +7,19 @@ on:
 
 jobs:
   build-macos:
-    runs-on: macos-13  # 降级镜像
+    runs-on: macos-14
     
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Setup .NET 9
+      - name: Select Xcode 15.4
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+      
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.100'
+          dotnet-version: '8.0.x'
       
       - name: Install MAUI
         run: |
@@ -24,13 +27,16 @@ jobs:
           dotnet workload install maui-maccatalyst
       
       - name: Restore
-        run: dotnet restore CsvProcessor.csproj
+        env:
+          DOTNET_NOLOGO: true
+        run: dotnet restore CsvProcessor.csproj /p:CheckEolTargetFramework=false
       
       - name: Build
         run: |
           dotnet publish CsvProcessor.csproj \
-            -f net9.0-maccatalyst \
+            -f net8.0-maccatalyst \
             -c Release \
+            -p:CheckEolTargetFramework=false \
             -p:EnableCodeSigning=false \
             -p:EnablePackageSigning=false \
             -p:CreatePackage=true \
