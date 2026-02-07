@@ -2,7 +2,7 @@ trigger:
   - main
 
 pool:
-  vmImage: 'macOS-14'
+  vmImage: 'macOS-15'  # 升级镜像
 
 variables:
   buildConfiguration: 'Release'
@@ -11,6 +11,11 @@ steps:
 - task: UseDotNet@2
   inputs:
     version: '9.0.x'
+
+- script: |
+    sudo xcode-select -s /Applications/Xcode_16.app
+    xcodebuild -version
+  displayName: 'Select Xcode 16'
 
 - script: |
     dotnet workload install maui
