@@ -25,6 +25,8 @@
     <UseHardenedRuntime>true</UseHardenedRuntime>
     <EnableCodeSigning>false</EnableCodeSigning>
     <EnablePackageSigning>false</EnablePackageSigning>
+    <SelfContained>true</SelfContained>      <!-- 添加 -->
+    <PublishTrimmed>false</PublishTrimmed>   <!-- 修改 -->
     
     <CodesignEntitlements>Platforms/MacCatalyst/Entitlements.plist</CodesignEntitlements>
     

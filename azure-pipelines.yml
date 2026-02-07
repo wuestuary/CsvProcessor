@@ -29,6 +29,8 @@ steps:
       -p:EnableCodeSigning=false \
       -p:EnablePackageSigning=false \
       -p:CreatePackage=true \
+      -p:SelfContained=true \           # 添加：自包含
+      -p:PublishTrimmed=false \          # 修改：禁用裁剪（先测试）
       -o $(Build.ArtifactStagingDirectory)
   displayName: 'Build macOS App'
 
