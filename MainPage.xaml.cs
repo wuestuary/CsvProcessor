@@ -14,34 +14,29 @@ private const int SM_CYSCREEN = 1; // 屏幕高度
 {
     InitializeComponent();
     #if MACCATALYST
-        SetupMacOSDragDrop();
+    SetupMacOSDragDrop();
 #endif
-    }
-
-#if MACCATALYST
-    private void SetupMacOSDragDrop()
-    {
-        var helper = new DragDropHelper();
-        helper.FileDropped += (s, path) =>
-        {
-            MainThread.BeginInvokeOnMainThread(async () =>
-            {
-                await ProcessCsv(path);
-            });
-        };
-
-        // 添加到页面
-        var platformView = Content.Handler?.PlatformView as UIKit.UIView;
-        platformView?.AddSubview(helper);
-    }
-#endif
-    
     LoadSettings();
 
     // 设置页面拖放支持
     SetupDragDrop();
 }
+#if MACCATALYST
+private void SetupMacOSDragDrop()
+{
+    var helper = new DragDropHelper();
+    helper.FileDropped += (s, path) =>
+    {
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            await ProcessCsv(path);
+        });
+    };
 
+    var platformView = Content.Handler?.PlatformView as UIKit.UIView;
+    platformView?.AddSubview(helper);
+}
+#endif
 private void SetupDragDrop()
 {
 #if WINDOWS
@@ -492,4 +487,7 @@ private async Task<string> ProcessCsvAsync(string filePath)
 
     return result.ToString();
 }
+
+// ===============================================================
+
 }
