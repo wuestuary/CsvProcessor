@@ -30,7 +30,8 @@ steps:
       -p:EnablePackageSigning=false \
       -p:CreatePackage=true \
       -p:SelfContained=true \
-      -p:PublishTrimmed=false \
+      -p:PublishTrimmed=true \
+      -p:TrimMode=partial \
       -o $(Build.ArtifactStagingDirectory)
   displayName: 'Build macOS App'
 
