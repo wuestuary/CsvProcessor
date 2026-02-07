@@ -21,8 +21,9 @@ steps:
   displayName: 'Restore'
 
 - script: |
+    export DOTNET_CLI_TELEMETRY_OPTOUT=1
     dotnet publish CsvProcessor.csproj \
-      -f net8.0-maccatalyst \
+      -f net8.0-maccatalyst17.5 \
       -c $(buildConfiguration) \
       -p:CheckEolTargetFramework=false \
       -p:EnableCodeSigning=false \

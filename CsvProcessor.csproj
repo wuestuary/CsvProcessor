@@ -18,6 +18,7 @@
   <!-- macOS Release 配置 -->
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <RuntimeIdentifier>maccatalyst-x64</RuntimeIdentifier>
+<MtouchLink>SdkOnly</MtouchLink>
     <!-- 或 arm64，或 maccatalyst-x64;maccatalyst-arm64 通用 -->
     
     <CreatePackage>true</CreatePackage>
