@@ -10,21 +10,21 @@ variables:
 steps:
 - task: UseDotNet@2
   inputs:
-    version: '9.0.100'  # 固定早期版本
+    version: '8.0.x'  # 使用 .NET 8
 
 - script: |
-    # 安装与 Xcode 15.4 兼容的 MAUI 版本
-    dotnet workload install maui --version 8.0.100
-    dotnet workload install maui-maccatalyst --version 8.0.100
-  displayName: 'Install MAUI 8.0.100'
+    dotnet workload install maui
+    dotnet workload install maui-maccatalyst
+  displayName: 'Install MAUI Workloads'
 
 - script: dotnet restore CsvProcessor.csproj
   displayName: 'Restore'
 
 - script: |
     dotnet publish CsvProcessor.csproj \
-      -f net9.0-maccatalyst \
+      -f net8.0-maccatalyst \
       -c $(buildConfiguration) \
+      -p:CheckEolTargetFramework=false \
       -p:EnableCodeSigning=false \
       -p:EnablePackageSigning=false \
       -p:CreatePackage=true \
