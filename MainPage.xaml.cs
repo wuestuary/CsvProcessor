@@ -13,6 +13,29 @@ private const int SM_CYSCREEN = 1; // 屏幕高度
     public MainPage()
 {
     InitializeComponent();
+    #if MACCATALYST
+        SetupMacOSDragDrop();
+#endif
+    }
+
+#if MACCATALYST
+    private void SetupMacOSDragDrop()
+    {
+        var helper = new DragDropHelper();
+        helper.FileDropped += (s, path) =>
+        {
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                await ProcessCsv(path);
+            });
+        };
+
+        // 添加到页面
+        var platformView = Content.Handler?.PlatformView as UIKit.UIView;
+        platformView?.AddSubview(helper);
+    }
+#endif
+    
     LoadSettings();
 
     // 设置页面拖放支持
