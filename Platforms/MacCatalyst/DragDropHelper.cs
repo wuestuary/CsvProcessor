@@ -36,7 +36,7 @@ public class DragDropHelper : UIView, IUIDropInteractionDelegate
             });
         }
     }
-
+// 强制修改
     public UIDropProposal GetDropProposal(IUIDropInteraction interaction, UIDropSession session)
     {
         return new UIDropProposal(UIDropOperation.Copy);
