@@ -10,7 +10,15 @@ variables:
 steps:
 - task: UseDotNet@2
   inputs:
-    version: '8.0.x'  # 使用 .NET 8
+    version: '8.0.x'
+
+- script: |
+    dotnet workload install maui
+    dotnet workload install maui-maccatalyst
+  displayName: 'Install MAUI Workloads'
+
+- script: dotnet restore CsvProcessor.csproj
+  displayName: 'Restore'
 
 - script: |
     dotnet publish CsvProcessor.csproj \
@@ -22,20 +30,13 @@ steps:
       -p:SelfContained=true \
       -p:PublishTrimmed=true \
       -p:TrimMode=partial \
-      -p:OutputPath=./output \
-      -bl  # 添加二进制日志
+      -p:OutputPath=./output
   displayName: 'Build macOS App'
 
 - script: |
     echo "=== 输出目录内容 ==="
     ls -la ./output
     du -sh ./output/*
-    
-    echo "=== 查找 .app ==="
-    find ./output -name "*.app" -type d
-    
-    echo "=== 查找 .pkg ==="
-    find ./output -name "*.pkg"
   displayName: 'Check Output'
 
 - task: PublishBuildArtifacts@1
