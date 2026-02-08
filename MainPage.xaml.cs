@@ -27,22 +27,27 @@ private void SetupDragDrop()
     dropGesture.DragOver += (s, e) =>
     {
         e.AcceptedOperation = DataPackageOperation.Copy;
-        // 显示视觉反馈
+        // 可选：视觉反馈
     };
     
     dropGesture.Drop += async (s, e) =>
     {
-        // 处理拖放
-        if (e.Data.Properties.TryGetValue("FilePath", out var path))
+        try
         {
-            await LoadFileOnly(path.ToString());
+            if (e.Data.Properties.TryGetValue("FilePath", out var pathObj) && pathObj is string path)
+            {
+                await LoadFileOnly(path);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Drop error: {ex.Message}");
         }
     };
 
-    // 添加到页面或特定区域
-    this.GestureRecognizers.Add(dropGesture);
+    // 添加到 Content，而不是 this
+    Content.GestureRecognizers.Add(dropGesture);
 }
-
 
     private void LoadSettings()
     {
@@ -346,7 +351,7 @@ private async Task<string> ProcessCsvAsync(string filePath)
     var currentField = new StringBuilder();
     var fields = new List<string>();
     bool inQuote = false;
-    //
+    
     // 创建一个大小为1的缓冲区，用于适配 .NET 9 的 ReadAsync
     var buffer = new char[1];
 
