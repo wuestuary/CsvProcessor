@@ -29,6 +29,7 @@ steps:
       -p:CodesignProvision= \
       -p:EnablePackageSigning=false \
       -p:CreatePackage=true \
+      -p:PackageFormat=pkg \
       -p:SelfContained=true \
       -p:PublishTrimmed=true \
       -p:TrimMode=partial \
@@ -36,10 +37,11 @@ steps:
   displayName: 'Build macOS App'
 
 - script: |
-    echo "=== 输出目录内容 ==="
-    ls -la ./output
-    find ./output -name "*.pkg" -o -name "*.app"
-    du -sh ./output/*
+    echo "=== 查找 pkg ==="
+    find ./output -name "*.pkg" -type f
+    echo "=== 查找 app ==="
+    find ./output -name "*.app" -type d
+    ls -la ./output/
   displayName: 'Check Output'
 
 - task: PublishBuildArtifacts@1
