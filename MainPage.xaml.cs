@@ -22,15 +22,15 @@ private const int SM_CYSCREEN = 1; // 屏幕高度
 
 private void SetupPageDragDrop()
 {
-    var dropGesture = new DropGestureRecognizer();
+    var PagedropGesture = new PagedropGestureRecognizer();
     
-    dropGesture.DragOver += (s, e) =>
+    PagedropGesture.DragOver += (s, e) =>
     {
         e.AcceptedOperation = DataPackageOperation.Copy;
         // 可选：改变鼠标样式或显示提示
     };
     
-    dropGesture.Drop += async (s, e) =>
+    PagedropGesture.Drop += async (s, e) =>
     {
         try
         {
@@ -51,11 +51,11 @@ private void SetupPageDragDrop()
     // 关键：添加到整个页面的内容
     if (Content is Layout layout)
     {
-        layout.GestureRecognizers.Add(dropGesture);
+        layout.GestureRecognizers.Add(PagedropGesture);
     }
     else if (Content is View view)
     {
-        view.GestureRecognizers.Add(dropGesture);
+        view.GestureRecognizers.Add(PagedropGesture);
     }
 }
 
