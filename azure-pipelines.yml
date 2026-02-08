@@ -22,7 +22,7 @@ steps:
 
 - script: |
     dotnet publish CsvProcessor.csproj \
-      -f net8.0-maccatalyst17.5 \
+      -f net8.0-maccatalyst \
       -c $(buildConfiguration) \
       -p:EnableCodeSigning=true \
       -p:CodesignKey=- \
