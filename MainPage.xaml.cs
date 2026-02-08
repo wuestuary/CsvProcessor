@@ -14,31 +14,35 @@ private const int SM_CYSCREEN = 1; // 屏幕高度
 {
     InitializeComponent();
     
-    // 页面加载完成后设置拖放
-    this.Loaded += (s, e) => SetupPageDragDrop();
+    // 设置页面拖放
+    SetupPageDragDrop();
     
     LoadSettings();
 }
 
 private void SetupPageDragDrop()
 {
-    var PagedropGesture = new PagedropGestureRecognizer();
-    
-    PagedropGesture.DragOver += (s, e) =>
+    // 拖入时
+    PageDropGesture.DragOver += (s, e) =>
     {
         e.AcceptedOperation = DataPackageOperation.Copy;
-        // 可选：改变鼠标样式或显示提示
     };
     
-    PagedropGesture.Drop += async (s, e) =>
+    // 释放时
+    PageDropGesture.Drop += async (s, e) =>
     {
         try
         {
-            if (e.Data.Properties.TryGetValue("FilePath", out var pathObj) && pathObj is string path)
+            if (e.Data.Properties.TryGetValue("FilePath", out var pathObj) 
+                && pathObj is string path)
             {
                 if (path.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 {
                     await LoadFileOnly(path);
+                }
+                else
+                {
+                    await DisplayAlert("提示", "请选择 CSV 文件", "确定");
                 }
             }
         }
@@ -47,16 +51,6 @@ private void SetupPageDragDrop()
             System.Diagnostics.Debug.WriteLine($"Drop error: {ex.Message}");
         }
     };
-
-    // 关键：添加到整个页面的内容
-    if (Content is Layout layout)
-    {
-        layout.GestureRecognizers.Add(PagedropGesture);
-    }
-    else if (Content is View view)
-    {
-        view.GestureRecognizers.Add(PagedropGesture);
-    }
 }
 
     private void LoadSettings()
