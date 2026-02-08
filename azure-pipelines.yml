@@ -24,7 +24,9 @@ steps:
     dotnet publish CsvProcessor.csproj \
       -f net8.0-maccatalyst17.5 \
       -c $(buildConfiguration) \
-      -p:EnableCodeSigning=false \
+      -p:EnableCodeSigning=true \
+      -p:CodesignKey=- \
+      -p:CodesignProvision= \
       -p:EnablePackageSigning=false \
       -p:CreatePackage=true \
       -p:SelfContained=true \
@@ -36,6 +38,7 @@ steps:
 - script: |
     echo "=== 输出目录内容 ==="
     ls -la ./output
+    find ./output -name "*.pkg" -o -name "*.app"
     du -sh ./output/*
   displayName: 'Check Output'
 

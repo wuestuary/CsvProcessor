@@ -13,96 +13,34 @@ private const int SM_CYSCREEN = 1; // 屏幕高度
     public MainPage()
 {
     InitializeComponent();
-    LoadSettings();
-
-    // 设置页面拖放支持
+    
+    // 所有平台都启用拖放
     SetupDragDrop();
+    
+    LoadSettings();
 }
 
 private void SetupDragDrop()
 {
-#if WINDOWS
-    // Windows 平台拖放设置
-    this.Loaded += (s, e) =>
+    var dropGesture = new DropGestureRecognizer();
+    
+    dropGesture.DragOver += (s, e) =>
     {
-        try
+        e.AcceptedOperation = DataPackageOperation.Copy;
+        // 显示视觉反馈
+    };
+    
+    dropGesture.Drop += async (s, e) =>
+    {
+        // 处理拖放
+        if (e.Data.Properties.TryGetValue("FilePath", out var path))
         {
-            // 获取页面所在的窗口
-            var window = Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault();
-            if (window?.Handler?.PlatformView is Microsoft.UI.Xaml.Window nativeWindow)
-            {
-                // ======================== 新增：窗口居中逻辑 (兼容旧版 SDK) ========================
-                var appWindow = nativeWindow.AppWindow;
-                if (appWindow != null)
-                {
-                    // 使用原生 API 获取主屏幕尺寸（兼容性好，不受 SDK 版本限制）
-                    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-                    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-                    
-                    // 计算居中坐标
-                    int centerX = (screenWidth - appWindow.Size.Width) / 2;
-                    int centerY = (screenHeight - appWindow.Size.Height) / 2;
-                    
-                    // 简单的防负数保护
-                    if (centerX < 0) centerX = 0;
-                    if (centerY < 0) centerY = 0;
-
-                    // 移动窗口
-                    appWindow.Move(new Windows.Graphics.PointInt32(centerX, centerY));
-                }
-                // ===============================================================
-
-                var content = nativeWindow.Content as Microsoft.UI.Xaml.UIElement;
-                if (content != null)
-                {
-                    content.AllowDrop = true;
-
-                    content.DragOver += (sender, args) =>
-                    {
-                        if (args.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.StorageItems))
-                        {
-                            args.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Copy;
-                            args.DragUIOverride.Caption = "复制 CSV 文件";
-                            args.DragUIOverride.IsCaptionVisible = true;
-                            args.DragUIOverride.IsContentVisible = true;
-                            args.DragUIOverride.IsGlyphVisible = true;
-                        }
-                        args.Handled = true;
-                    };
-
-                    content.Drop += async (sender, args) =>
-                    {
-                        if (!args.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.StorageItems))
-                            return;
-
-                        try
-                        {
-                            var items = await args.DataView.GetStorageItemsAsync();
-                            var csvFile = items.FirstOrDefault(i => 
-                                i.Name.EndsWith(".csv", StringComparison.OrdinalIgnoreCase));
-
-                            if (csvFile != null)
-                            {
-                                await MainThread.InvokeOnMainThreadAsync(async () =>
-                                {
-                                    await LoadFileOnly(csvFile.Path);
-                                });
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"Drop error: {ex.Message}");
-                        }
-                    };
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"DragDrop setup error: {ex.Message}");
+            await LoadFileOnly(path.ToString());
         }
     };
-#endif
+
+    // 添加到页面或特定区域
+    this.GestureRecognizers.Add(dropGesture);
 }
 
 
