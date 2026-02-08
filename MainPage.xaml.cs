@@ -1,5 +1,7 @@
 ﻿using System.Text;
-
+#if MACCATALYST
+using CsvProcessor.Platforms.MacCatalyst;
+#endif
 namespace CsvProcessor;
 
 public partial class MainPage : ContentPage
@@ -14,20 +16,27 @@ private const int SM_CYSCREEN = 1; // 屏幕高度
 {
     InitializeComponent();
     
-    // 简单拖放
-    var dropGesture = new DropGestureRecognizer();
-    dropGesture.Drop += async (s, e) =>
-    {
-        if (e.Data.Properties.TryGetValue("FilePath", out var path))
-        {
-            await LoadFileOnly(path.ToString());
-        }
-    };
-    Content.GestureRecognizers.Add(dropGesture);
-    
-    LoadSettings();
-}
+#if MACCATALYST
+        SetupMacFileDrop();
+#endif
+    }
 
+#if MACCATALYST
+    void SetupMacFileDrop()
+    {
+        var handler = DropZone.Handler as FileDropViewHandler;
+        if (handler?.PlatformView is FileDropView dropView)
+        {
+            dropView.OnFileDropped = async path =>
+            {
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await LoadFileOnly(path);
+                });
+            };
+        }
+    }
+#endif
     private void LoadSettings()
     {
         EnableFilterSwitch.IsToggled = Preferences.Get("EnableFilterSwitch", true);

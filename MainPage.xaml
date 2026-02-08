@@ -140,9 +140,10 @@
                 Clicked="OnExitClicked"
                 Margin="20,10,20,20"
                 Padding="10"/>
-        
-<Grid.GestureRecognizers>
-            <DropGestureRecognizer x:Name="DropGesture" />
-        </Grid.GestureRecognizers>
+        <!-- 拖放层（透明） -->
+        <ContentView x:Name="DropZone"
+                     BackgroundColor="Transparent"
+                     VerticalOptions="Fill"
+                     HorizontalOptions="Fill"/>
     </Grid>
 </ContentPage>

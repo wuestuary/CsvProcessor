@@ -1,0 +1,1 @@
+﻿using Microsoft.Maui.Handlers;using CsvProcessor.Platforms.MacCatalyst;namespace CsvProcessor;public class FileDropViewHandler : ViewHandler<View, FileDropView>{    protected override FileDropView CreatePlatformView()    {        return new FileDropView();    }}
