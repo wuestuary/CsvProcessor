@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0-maccatalyst</TargetFramework>
+<PropertyGroup>
+    <TargetFramework>net8.0-maccatalyst</TargetFramework>
     <OutputType>Exe</OutputType>
     <RootNamespace>CsvProcessor</RootNamespace>
     <UseMaui>true</UseMaui>
@@ -13,6 +13,8 @@
     <ApplicationId>com.companyname.csvprocessor</ApplicationId>
     <ApplicationVersion>1</ApplicationVersion>
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    
+    <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <!-- macOS Release 配置 -->
