@@ -37,12 +37,20 @@ steps:
   displayName: 'Build macOS App'
 
 - script: |
-    echo "=== 查找 pkg ==="
-    find ./output -name "*.pkg" -type f
-    echo "=== 查找 app ==="
-    find ./output -name "*.app" -type d
-    ls -la ./output/
-  displayName: 'Check Output'
+    # 创建 pkg 安装包
+    pkgbuild --component ./output/CsvProcessor.app \
+      --install-location /Applications \
+      --identifier com.companyname.csvprocessor \
+      --version 1.0 \
+      ./output/CsvProcessor-1.0.pkg
+  displayName: 'Create PKG Installer'
+
+- script: |
+    echo "=== 最终输出 ==="
+    ls -lh ./output/*.pkg ./output/*.app
+    du -sh ./output/CsvProcessor.app
+    du -sh ./output/CsvProcessor-1.0.pkg
+  displayName: 'Final Check'
 
 - task: PublishBuildArtifacts@1
   inputs:
