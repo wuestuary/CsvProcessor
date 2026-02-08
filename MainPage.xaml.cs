@@ -1,7 +1,5 @@
 ﻿using System.Text;
-#if MACCATALYST
-using CsvProcessor.Platforms.MacCatalyst;
-#endif
+
 namespace CsvProcessor;
 
 public partial class MainPage : ContentPage
@@ -16,43 +14,34 @@ private const int SM_CYSCREEN = 1; // 屏幕高度
     {
         InitializeComponent();
         
-#if MACCATALYST
-        SetupNativeDragDrop();
-#endif
+    
+// 设置页面拖放
+    SetupPageDragDrop();
         
         LoadSettings();
     }
 
-#if MACCATALYST
-    private void SetupNativeDragDrop()
+// 简单的跨平台拖放
+private void SetupDragDrop()
+{
+    var dropGesture = new DropGestureRecognizer();
+    
+    dropGesture.DragOver += (s, e) =>
     {
-        // 等待页面加载完成
-        this.Loaded += (s, e) =>
+        e.AcceptedOperation = DataPackageOperation.Copy;
+    };
+    
+    dropGesture.Drop += async (s, e) =>
+    {
+        // .NET 9 可能支持更好的数据获取
+        if (e.Data.Properties.TryGetValue("FilePath", out var path))
         {
-            var nativeView = new NativeDragDropView();
-            nativeView.FileDropped += async (sender, path) =>
-            {
-                await MainThread.InvokeOnMainThreadAsync(async () =>
-                {
-                    await LoadFileOnly(path);
-                });
-            };
+            await LoadFileOnly(path.ToString());
+        }
+    };
 
-            // 覆盖整个窗口
-            var window = UIApplication.SharedApplication.KeyWindow;
-            var rootView = window?.RootViewController?.View;
-            rootView?.AddSubview(nativeView);
-            
-            // 设置全屏
-            nativeView.TranslatesAutoresizingMaskIntoConstraints = false;
-            nativeView.TopAnchor.ConstraintEqualTo(rootView.TopAnchor).Active = true;
-            nativeView.BottomAnchor.ConstraintEqualTo(rootView.BottomAnchor).Active = true;
-            nativeView.LeadingAnchor.ConstraintEqualTo(rootView.LeadingAnchor).Active = true;
-            nativeView.TrailingAnchor.ConstraintEqualTo(rootView.TrailingAnchor).Active = true;
-        };
-    }
-#endif
-
+    Content.GestureRecognizers.Add(dropGesture);
+}
 
     private void LoadSettings()
     {

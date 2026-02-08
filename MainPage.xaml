@@ -141,5 +141,8 @@
                 Margin="20,10,20,20"
                 Padding="10"/>
         
+<Grid.GestureRecognizers>
+            <DropGestureRecognizer x:Name="DropGesture" />
+        </Grid.GestureRecognizers>
     </Grid>
 </ContentPage>
