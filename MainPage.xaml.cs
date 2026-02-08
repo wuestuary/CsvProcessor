@@ -11,36 +11,21 @@ private const int SM_CXSCREEN = 0; // 屏幕宽度
 private const int SM_CYSCREEN = 1; // 屏幕高度
 
     public MainPage()
-    {
-        InitializeComponent();
-        
-    
-// 设置页面拖放
-    SetupPageDragDrop();
-        
-        LoadSettings();
-    }
-
-// 简单的跨平台拖放
-private void SetupDragDrop()
 {
+    InitializeComponent();
+    
+    // 简单拖放
     var dropGesture = new DropGestureRecognizer();
-    
-    dropGesture.DragOver += (s, e) =>
-    {
-        e.AcceptedOperation = DataPackageOperation.Copy;
-    };
-    
     dropGesture.Drop += async (s, e) =>
     {
-        // .NET 9 可能支持更好的数据获取
         if (e.Data.Properties.TryGetValue("FilePath", out var path))
         {
             await LoadFileOnly(path.ToString());
         }
     };
-
     Content.GestureRecognizers.Add(dropGesture);
+    
+    LoadSettings();
 }
 
     private void LoadSettings()
