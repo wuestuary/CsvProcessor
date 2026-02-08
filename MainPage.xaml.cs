@@ -1,5 +1,7 @@
 ﻿using System.Text;
-
+#if MACCATALYST
+using CsvProcessor.Platforms.MacCatalyst;
+#endif
 namespace CsvProcessor;
 
 public partial class MainPage : ContentPage
@@ -11,47 +13,46 @@ private const int SM_CXSCREEN = 0; // 屏幕宽度
 private const int SM_CYSCREEN = 1; // 屏幕高度
 
     public MainPage()
-{
-    InitializeComponent();
-    
-    // 设置页面拖放
-    SetupPageDragDrop();
-    
-    LoadSettings();
-}
+    {
+        InitializeComponent();
+        
+#if MACCATALYST
+        SetupNativeDragDrop();
+#endif
+        
+        LoadSettings();
+    }
 
-private void SetupPageDragDrop()
-{
-    // 拖入时
-    PageDropGesture.DragOver += (s, e) =>
+#if MACCATALYST
+    private void SetupNativeDragDrop()
     {
-        e.AcceptedOperation = DataPackageOperation.Copy;
-    };
-    
-    // 释放时
-    PageDropGesture.Drop += async (s, e) =>
-    {
-        try
+        // 等待页面加载完成
+        this.Loaded += (s, e) =>
         {
-            if (e.Data.Properties.TryGetValue("FilePath", out var pathObj) 
-                && pathObj is string path)
+            var nativeView = new NativeDragDropView();
+            nativeView.FileDropped += async (sender, path) =>
             {
-                if (path.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+                await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
                     await LoadFileOnly(path);
-                }
-                else
-                {
-                    await DisplayAlert("提示", "请选择 CSV 文件", "确定");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Drop error: {ex.Message}");
-        }
-    };
-}
+                });
+            };
+
+            // 覆盖整个窗口
+            var window = UIApplication.SharedApplication.KeyWindow;
+            var rootView = window?.RootViewController?.View;
+            rootView?.AddSubview(nativeView);
+            
+            // 设置全屏
+            nativeView.TranslatesAutoresizingMaskIntoConstraints = false;
+            nativeView.TopAnchor.ConstraintEqualTo(rootView.TopAnchor).Active = true;
+            nativeView.BottomAnchor.ConstraintEqualTo(rootView.BottomAnchor).Active = true;
+            nativeView.LeadingAnchor.ConstraintEqualTo(rootView.LeadingAnchor).Active = true;
+            nativeView.TrailingAnchor.ConstraintEqualTo(rootView.TrailingAnchor).Active = true;
+        };
+    }
+#endif
+
 
     private void LoadSettings()
     {
