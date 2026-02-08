@@ -140,5 +140,9 @@
                 Clicked="OnExitClicked"
                 Margin="20,10,20,20"
                 Padding="10"/>
+        
+<Grid.GestureRecognizers>
+            <DropGestureRecognizer x:Name="PageDropGesture" />
+        </Grid.GestureRecognizers>
     </Grid>
 </ContentPage>

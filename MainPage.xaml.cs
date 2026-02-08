@@ -14,20 +14,20 @@ private const int SM_CYSCREEN = 1; // 屏幕高度
 {
     InitializeComponent();
     
-    // 所有平台都启用拖放
-    SetupDragDrop();
+    // 页面加载完成后设置拖放
+    this.Loaded += (s, e) => SetupPageDragDrop();
     
     LoadSettings();
 }
 
-private void SetupDragDrop()
+private void SetupPageDragDrop()
 {
     var dropGesture = new DropGestureRecognizer();
     
     dropGesture.DragOver += (s, e) =>
     {
         e.AcceptedOperation = DataPackageOperation.Copy;
-        // 可选：视觉反馈
+        // 可选：改变鼠标样式或显示提示
     };
     
     dropGesture.Drop += async (s, e) =>
@@ -36,7 +36,10 @@ private void SetupDragDrop()
         {
             if (e.Data.Properties.TryGetValue("FilePath", out var pathObj) && pathObj is string path)
             {
-                await LoadFileOnly(path);
+                if (path.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+                {
+                    await LoadFileOnly(path);
+                }
             }
         }
         catch (Exception ex)
@@ -45,8 +48,15 @@ private void SetupDragDrop()
         }
     };
 
-    // 添加到 Content，而不是 this
-    Content.GestureRecognizers.Add(dropGesture);
+    // 关键：添加到整个页面的内容
+    if (Content is Layout layout)
+    {
+        layout.GestureRecognizers.Add(dropGesture);
+    }
+    else if (Content is View view)
+    {
+        view.GestureRecognizers.Add(dropGesture);
+    }
 }
 
     private void LoadSettings()
