@@ -1,7 +1,4 @@
 ﻿using System.Text;
-#if MACCATALYST
-using CsvProcessor.Platforms.MacCatalyst;
-#endif
 namespace CsvProcessor;
 
 public partial class MainPage : ContentPage
