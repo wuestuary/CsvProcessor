@@ -1,7 +1,4 @@
 ﻿using Microsoft.Maui.LifecycleEvents;
-#if MACCATALYST
-using CsvProcessor.Platforms.MacCatalyst;
-#endif
 namespace CsvProcessor;
 
 public static class MauiProgram
@@ -14,12 +11,6 @@ public static class MauiProgram
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
             });
-            builder.ConfigureMauiHandlers(handlers =>
-{
-#if MACCATALYST
-    handlers.AddHandler<View, FileDropViewHandler>();
-#endif
-});
 
 #if WINDOWS
         builder.ConfigureLifecycleEvents(lifecycle =>
