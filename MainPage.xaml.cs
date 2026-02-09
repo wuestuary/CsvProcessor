@@ -15,28 +15,9 @@ private const int SM_CYSCREEN = 1; // 屏幕高度
     public MainPage()
 {
     InitializeComponent();
-    
-#if MACCATALYST
-        SetupMacFileDrop();
-#endif
+    LoadSettings();
     }
 
-#if MACCATALYST
-    void SetupMacFileDrop()
-    {
-        var handler = DropZone.Handler as FileDropViewHandler;
-        if (handler?.PlatformView is FileDropView dropView)
-        {
-            dropView.OnFileDropped = async path =>
-            {
-                await MainThread.InvokeOnMainThreadAsync(async () =>
-                {
-                    await LoadFileOnly(path);
-                });
-            };
-        }
-    }
-#endif
     private void LoadSettings()
     {
         EnableFilterSwitch.IsToggled = Preferences.Get("EnableFilterSwitch", true);
