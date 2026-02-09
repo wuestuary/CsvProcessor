@@ -11,21 +11,30 @@
     <!-- Please consult https://developer.apple.com/documentation/bundleresources/information_property_list/lsapplicationcategorytype -->
     <!-- <key>LSApplicationCategoryType</key> -->
     <!-- <string>public.app-category.YOUR-CATEGORY-HERE</string> -->
-<key>CFBundleDocumentTypes</key>
-<array>
-    <dict>
-        <key>CFBundleTypeName</key>
-        <string>CSV Document</string>
-        <key>CFBundleTypeRole</key>
-        <string>Editor</string>
-        <key>LSItemContentTypes</key>
-        <array>
-            <string>public.comma-separated-values-text</string>
-        </array>
-    </dict>
-</array>
     
-<!-- 新增：拖放支持的类型声明 -->
+<!-- 文件关联 -->
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>CSV Document</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>LSHandlerRank</key>
+            <string>Owner</string>  <!-- 设为默认应用 -->
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.comma-separated-values-text</string>
+                <string>public.csv</string>
+            </array>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>csv</string>
+            </array>
+        </dict>
+    </array>
+    
+    <!-- 导入类型声明 -->
     <key>UTImportedTypeDeclarations</key>
     <array>
         <dict>
@@ -38,8 +47,17 @@
                 <string>public.text</string>
                 <string>public.data</string>
             </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>csv</string>
+                </array>
+            </dict>
         </dict>
     </array>
+    
+
 <key>UIDeviceFamily</key>
 	<array>
 		<integer>2</integer>
