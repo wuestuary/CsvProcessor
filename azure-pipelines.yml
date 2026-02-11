@@ -5,56 +5,56 @@ pool:
   vmImage: 'macos-latest'
 
 variables:
-- group: iOSSecrets
+- group: AppleSigning
 - name: BUILD_CONFIGURATION
   value: 'Release'
 
 stages:
 - stage: Build_iOS
-  displayName: Build iOS IPA
+  displayName: 'Build iOS IPA'
   jobs:
   - job: Build
-    displayName: Build IPA
+    displayName: 'Build IPA'
     steps:
 
-    # 安装 .NET SDK
+    # Install .NET SDK
     - task: UseDotNet@2
       displayName: 'Use .NET 8 SDK'
       inputs:
         packageType: 'sdk'
         version: '8.0.x'
 
-    # 恢复 MAUI workloads
+    # Restore MAUI workloads
     - script: |
         echo "Restoring .NET workloads..."
         dotnet workload restore
       displayName: 'Restore .NET Workloads'
 
-    # 安装 iOS 证书
+    # Install iOS certificate
     - script: |
         echo "Installing iOS P12 Certificate..."
-        echo "$IOS_P12_BASE64_SECRET" | base64 --decode > cert.p12
-        security create-keychain -p "" build.keychain
-        security import cert.p12 -k ~/Library/Keychains/build.keychain -P "$P12_PASSWORD_SECRET" -T /usr/bin/codesign
+        echo "$IOS_P12_BASE64" | base64 --decode > cert.p12
+        security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+        security import cert.p12 -k ~/Library/Keychains/build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
         security list-keychains -s ~/Library/Keychains/build.keychain
-        security unlock-keychain -p "" ~/Library/Keychains/build.keychain
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" ~/Library/Keychains/build.keychain
         security set-keychain-settings -t 3600 -l ~/Library/Keychains/build.keychain
       displayName: 'Install iOS Certificate'
 
-    # 安装 Provisioning Profile
+    # Install provisioning profile
     - script: |
         echo "Installing Provisioning Profile..."
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-        echo "$PROVISIONING_PROFILE_BASE64_SECRET" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision
+        echo "$PROVISIONING_PROFILE_BASE64" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision
       displayName: 'Install Provisioning Profile'
 
-    # 编译 IPA
+    # Build the IPA
     - script: |
         echo "Building iOS IPA..."
         dotnet build CsvProcessor.csproj -c $BUILD_CONFIGURATION -f:net8.0-ios /p:Platform=iPhone /p:BuildIpa=true
       displayName: 'Build iOS IPA'
 
-    # 发布 IPA
+    # Publish IPA artifact
     - task: PublishBuildArtifacts@1
       inputs:
         PathtoPublish: 'bin/Release/net8.0-ios/ios-arm64'
