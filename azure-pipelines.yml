@@ -46,11 +46,18 @@ steps:
     CERTIFICATE_PASSWORD: $(P12_PASSWORD)
 
 - script: |
+    # 先列出证书
+    security find-identity -v -p codesigning
+    
+    # 使用第一个找到的 iPhone Distribution 证书
+    CERT_NAME=$(security find-identity -v -p codesigning | grep "iPhone Distribution" | head -1 | sed 's/.*"\(.*\)".*/\1/')
+    echo "使用证书: $CERT_NAME"
+    
     dotnet publish CsvProcessor.csproj \
       -f net8.0-ios \
       -c $(buildConfiguration) \
       -p:RuntimeIdentifier=ios-arm64 \
-      -p:CodesignKey="iPhone Distribution: Forevermark Marketing(Shanghai) Limited" \
+      -p:CodesignKey="$CERT_NAME" \
       -p:CodesignProvision="FM_CLIENTING" \
       -p:BuildIpa=true \
       -p:IpaPackagePath=$(Build.ArtifactStagingDirectory)/CsvProcessor.ipa
