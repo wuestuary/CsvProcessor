@@ -18,7 +18,7 @@ steps:
 - task: DownloadSecureFile@1
   name: provProfile
   inputs:
-    secureFile: 'FM_CLIENTING.mobileprovision'
+    secureFile: 'CsvProcessor.mobileprovision'
 
 - task: UseDotNet@2
   inputs:
