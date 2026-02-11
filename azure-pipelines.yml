@@ -73,20 +73,25 @@ stages:
         -p:BuildIpa=true \
         -p:Platform=iPhone
 
-    - task: Bash@3
-      displayName: Copy IPA to Publish folder
-      inputs:
-        targetType: 'inline'
-        script: |
-          echo "Searching for IPA file..."
-          mkdir -p $(PUBLISH_DIR)
-          IPA_FILE=$(find ./bin/$(BUILD_CONFIG)/net8.0-ios -name "*.ipa" | head -n 1)
-          if [ -z "$IPA_FILE" ]; then
-            echo "❌ No IPA file found!"
-            exit 1
-          fi
-          echo "IPA found: $IPA_FILE"
-          cp "$IPA_FILE" $(PUBLISH_DIR)/
+- task: Bash@3
+  displayName: Copy IPA to Publish folder
+  inputs:
+    targetType: 'inline'
+    script: |
+      echo "🔍 Searching for IPA file..."
+      mkdir -p $(Build.ArtifactStagingDirectory)/IPA
+
+      IPA_FILE=$(find . -type f -name "*.ipa" | head -n 1)
+
+      if [ -z "$IPA_FILE" ]; then
+        echo "❌ No IPA file found!"
+        find . -maxdepth 5
+        exit 1
+      fi
+
+      echo "✅ IPA found: $IPA_FILE"
+      cp "$IPA_FILE" $(Build.ArtifactStagingDirectory)/IPA/
+
 
     - task: PublishBuildArtifacts@1
       displayName: Publish IPA Artifact
