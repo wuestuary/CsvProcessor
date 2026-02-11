@@ -60,17 +60,18 @@ stages:
           cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
           echo "Provisioning profile installed."
 
-    - task: Bash@3
-      displayName: Build IPA
-      inputs:
-        targetType: 'inline'
-        script: |
-          echo "Building iOS IPA..."
-          dotnet build $(PROJECT) \
-            -c $(BUILD_CONFIG) \
-            -f net8.0-ios \
-            -p:Platform=iPhone \
-            -p:BuildIpa=true
+- task: Bash@3
+  displayName: Build iOS IPA
+  inputs:
+    targetType: 'inline'
+    script: |
+      echo "🏗 Building IPA..."
+      dotnet publish CsvProcessor.csproj \
+        -c Release \
+        -f net8.0-ios \
+        -p:RuntimeIdentifier=ios-arm64 \
+        -p:BuildIpa=true \
+        -p:Platform=iPhone
 
     - task: Bash@3
       displayName: Copy IPA to Publish folder
