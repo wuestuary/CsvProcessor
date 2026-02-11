@@ -47,7 +47,7 @@ stages:
     - task: DownloadSecureFile@1
       name: provProfile
       inputs:
-        secureFile: 'FM_CLIENTING.mobileprovision'
+        secureFile: 'CsvProcessor.mobileprovision'
 
     - task: Bash@3
       displayName: Install Certificate and Profile
