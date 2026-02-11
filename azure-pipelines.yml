@@ -28,7 +28,7 @@ steps:
     dotnet workload install maui ios
   displayName: 'Install MAUI iOS'
 
-- script: dotnet restore CsvProcessor.csproj -f net8.0-ios
+- script: dotnet restore CsvProcessor.csproj
   displayName: 'Restore'
 
 - script: |
