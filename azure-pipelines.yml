@@ -5,74 +5,59 @@ pool:
   vmImage: 'macos-latest'
 
 variables:
-  BUILD_CONFIGURATION: 'Release'
-  IOS_P12_BASE64: $(IOS_P12_BASE64)           # Apple Distribution P12 的 Base64 内容
-  P12_PASSWORD: $(P12_PASSWORD)               # P12 密码
-  PROVISIONING_PROFILE_BASE64: $(PROVISIONING_PROFILE_BASE64)  # Provisioning Profile Base64
-  PROVISIONING_PROFILE_NAME: 'FM_CLIENTING'  # 在 Xcode 中的 profile 名称
+- group: iOSSecrets
+- name: BUILD_CONFIGURATION
+  value: 'Release'
 
 stages:
 - stage: Build_iOS
+  displayName: Build iOS IPA
   jobs:
   - job: Build
+    displayName: Build IPA
     steps:
 
-    # 1️⃣ 安装 .NET 8 SDK（确保 MAUI iOS workload）
+    # 安装 .NET SDK
     - task: UseDotNet@2
+      displayName: 'Use .NET 8 SDK'
       inputs:
         packageType: 'sdk'
         version: '8.0.x'
-        includePreviewVersions: true
 
+    # 恢复 MAUI workloads
     - script: |
-        echo "✅ Restore workloads"
+        echo "Restoring .NET workloads..."
         dotnet workload restore
-      displayName: 'Restore MAUI Workloads'
+      displayName: 'Restore .NET Workloads'
 
-    # 2️⃣ 安装 Apple P12 证书
-    - task: Bash@3
-      displayName: 'Install Apple Certificate'
-      inputs:
-        targetType: 'inline'
-        script: |
-          echo "$IOS_P12_BASE64" | base64 --decode > cert.p12
-          security create-keychain -p build ios-build.keychain
-          security import cert.p12 -k ~/Library/Keychains/ios-build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
-          security list-keychains -s ~/Library/Keychains/ios-build.keychain
-          security unlock-keychain -p build ~/Library/Keychains/ios-build.keychain
-          security set-keychain-settings -t 3600 -l ~/Library/Keychains/ios-build.keychain
+    # 安装 iOS 证书
+    - script: |
+        echo "Installing iOS P12 Certificate..."
+        echo "$IOS_P12_BASE64_SECRET" | base64 --decode > cert.p12
+        security create-keychain -p "" build.keychain
+        security import cert.p12 -k ~/Library/Keychains/build.keychain -P "$P12_PASSWORD_SECRET" -T /usr/bin/codesign
+        security list-keychains -s ~/Library/Keychains/build.keychain
+        security unlock-keychain -p "" ~/Library/Keychains/build.keychain
+        security set-keychain-settings -t 3600 -l ~/Library/Keychains/build.keychain
+      displayName: 'Install iOS Certificate'
 
-    # 3️⃣ 安装 Provisioning Profile
-    - task: Bash@3
+    # 安装 Provisioning Profile
+    - script: |
+        echo "Installing Provisioning Profile..."
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        echo "$PROVISIONING_PROFILE_BASE64_SECRET" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision
       displayName: 'Install Provisioning Profile'
-      inputs:
-        targetType: 'inline'
-        script: |
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo "$PROVISIONING_PROFILE_BASE64" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/$PROVISIONING_PROFILE_NAME.mobileprovision
 
-    # 4️⃣ Build iOS IPA
-    - task: Bash@3
+    # 编译 IPA
+    - script: |
+        echo "Building iOS IPA..."
+        dotnet build CsvProcessor.csproj -c $BUILD_CONFIGURATION -f:net8.0-ios /p:Platform=iPhone /p:BuildIpa=true
       displayName: 'Build iOS IPA'
-      inputs:
-        targetType: 'inline'
-        script: |
-          echo "🏗 Building iOS app"
-          dotnet build CsvProcessor.csproj \
-            -c $BUILD_CONFIGURATION \
-            -f net8.0-ios \
-            /p:Platform=iPhone \
-            /p:BuildIpa=true \
-            /p:CodesignKey="iPhone Distribution: Forevermark Marketing(Shanghai ) Limited" \
-            /p:CodesignProvision="$PROVISIONING_PROFILE_NAME"
 
-          echo "📂 List IPA folder"
-          ls -R bin
-
-    # 5️⃣ Publish IPA Artifact
+    # 发布 IPA
     - task: PublishBuildArtifacts@1
-      displayName: 'Publish IPA Artifact'
       inputs:
-        PathtoPublish: 'bin/**/net8.0-ios/ios-arm64'
-        ArtifactName: 'iOS'
+        PathtoPublish: 'bin/Release/net8.0-ios/ios-arm64'
+        ArtifactName: 'iOS-IPA'
         publishLocation: 'Container'
+      displayName: 'Publish IPA Artifact'
