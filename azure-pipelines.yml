@@ -63,12 +63,13 @@ steps:
       -c $(buildConfiguration) \
       -p:RuntimeIdentifier=ios-arm64 \
       -p:CodesignKey="$CERT_NAME" \
-      -p:CodesignProvision="FM_CLIENTING" \
+      -p:CodesignProvision=FM_CLIENTING \
       -p:BuildIpa=true \
-      -p:MtouchLink=SdkOnly \            # ⭐ 核心优化
+      -p:MtouchLink=SdkOnly \
       -p:EnableAssemblyILStripping=false \
       -p:IpaPackagePath=$(Build.ArtifactStagingDirectory)/CsvProcessor.ipa
   displayName: 'Build iOS IPA'
+
 
 - task: PublishBuildArtifacts@1
   inputs:
