@@ -35,130 +35,85 @@ stages:
       inputs:
         targetType: inline
         script: |
-          dotnet workload restore
+          dotnet workload install maui ios
+
+    # 下载证书
+    - task: DownloadSecureFile@1
+      name: p12Cert
+      inputs:
+        secureFile: 'iOS_Distribution.p12'
+
+    # 下载描述文件
+    - task: DownloadSecureFile@1
+      name: provProfile
+      inputs:
+        secureFile: 'FM_CLIENTING.mobileprovision'
 
     - task: Bash@3
-      displayName: Install P12 Certificate (DIAGNOSTIC)
+      displayName: Install Certificate and Profile
       inputs:
         targetType: inline
         script: |
           set -e
-
           KEYCHAIN_NAME=build.keychain
-
-          echo "🔎 Check env vars"
-          if [ -z "$P12_BASE64" ]; then
-            echo "❌ P12_BASE64 is EMPTY"
-            exit 1
-          fi
-          if [ -z "$P12_PASSWORD" ]; then
-            echo "❌ P12_PASSWORD is EMPTY"
-            exit 1
-          fi
-          if [ -z "$KEYCHAIN_PASSWORD" ]; then
-            echo "❌ KEYCHAIN_PASSWORD is EMPTY"
-            exit 1
-          fi
-
-          echo "🧹 Delete existing keychain"
-          security delete-keychain "$KEYCHAIN_NAME" || true
-
-          echo "📦 Decode P12"
-          echo "$P12_BASE64" | base64 --decode > /tmp/cert.p12
-          ls -lh /tmp/cert.p12
-
-          echo "🔍 Validate P12 file"
-          if ! openssl pkcs12 -in /tmp/cert.p12 -nodes -passin pass:"$P12_PASSWORD" > /dev/null 2>&1; then
-            echo "❌ P12 file or password is INVALID"
-            exit 1
-          fi
-          echo "✅ P12 is valid"
-
-          echo "🔐 Create keychain"
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          
+          # 删除旧钥匙串
+          security delete-keychain "$KEYCHAIN_NAME" 2>/dev/null || true
+          
+          # 创建新钥匙串
+          security create-keychain -p "$(KEYCHAIN_PASSWORD)" "$KEYCHAIN_NAME"
           security default-keychain -s "$KEYCHAIN_NAME"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-
-          echo "📥 Import certificate"
-          security import /tmp/cert.p12 \
+          security unlock-keychain -p "$(KEYCHAIN_PASSWORD)" "$KEYCHAIN_NAME"
+          
+          # 导入证书
+          security import "$(p12Cert.secureFilePath)" \
             -k "$KEYCHAIN_NAME" \
-            -P "$P12_PASSWORD" \
+            -P "$(P12_PASSWORD)" \
             -A \
-            -T /usr/bin/codesign \
-            -T /usr/bin/security
-
-          echo "🔑 Allow codesign access"
+            -T /usr/bin/codesign
+          
+          # 允许访问
           security set-key-partition-list \
             -S apple-tool:,apple: \
             -s \
-            -k "$KEYCHAIN_PASSWORD" \
+            -k "$(KEYCHAIN_PASSWORD)" \
             "$KEYCHAIN_NAME"
-
-          echo "🔍 Verify identity"
+          
+          # 复制描述文件
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp "$(provProfile.secureFilePath)" ~/Library/MobileDevice/Provisioning\ Profiles/
+          
+          # 验证
           security find-identity -v -p codesigning
 
     - task: Bash@3
-      displayName: Install Provisioning Profile
-      inputs:
-        targetType: inline
-        script: |
-          echo "$PROVISIONING_PROFILE_BASE64" | base64 --decode > /tmp/profile.mobileprovision
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
-
-    - task: Bash@3
-      displayName: Install P12 Certificate (FINAL)
-      inputs:
-        targetType: inline
-        script: |
-          set -e
-
-          KEYCHAIN_NAME=build.keychain
-
-          echo "🧹 Delete existing keychain if any"
-          security delete-keychain "$KEYCHAIN_NAME" || true
-
-          echo "📦 Decode P12"
-          echo "$P12_BASE64" | base64 --decode > /tmp/cert.p12
-
-          echo "🔐 Create keychain"
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-          security list-keychains -s "$KEYCHAIN_NAME"
-          security default-keychain -s "$KEYCHAIN_NAME"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-
-          echo "📥 Import certificate"
-          security import /tmp/cert.p12 \
-            -k "$KEYCHAIN_NAME" \
-            -P "$P12_PASSWORD" \
-            -A \
-            -T /usr/bin/codesign \
-            -T /usr/bin/security
-
-          echo "🔑 Set keychain partition list (CRITICAL)"
-          security set-key-partition-list \
-            -S apple-tool:,apple: \
-            -s \
-            -k "$KEYCHAIN_PASSWORD" \
-            "$KEYCHAIN_NAME"
-
-          echo "🔍 Verify code signing identity"
-          security find-identity -v -p codesigning "$KEYCHAIN_NAME"
-
-    - task: Bash@3
-      displayName: Collect IPA
+      displayName: Build iOS IPA
       inputs:
         targetType: inline
         script: |
           mkdir -p $(PUBLISH_DIR)
-          IPA=$(find . -name "*.ipa" | head -n 1)
+          
+          dotnet publish $(PROJECT) \
+            -f net8.0-ios \
+            -c $(BUILD_CONFIG) \
+            -p:RuntimeIdentifier=ios-arm64 \
+            -p:CodesignKey="iPhone Distribution: Forevermark Marketing(Shanghai) Limited" \
+            -p:CodesignProvision="FM_CLIENTING" \
+            -p:BuildIpa=true \
+            -p:IpaPackagePath=$(PUBLISH_DIR)/CsvProcessor.ipa \
+            -p:PublishTrimmed=false
 
-          if [ -z "$IPA" ]; then
-            echo "❌ IPA not found"
-            exit 1
-          fi
-
-          cp "$IPA" $(PUBLISH_DIR)/
+    - task: Bash@3
+      displayName: Upload to Pgyer
+      inputs:
+        targetType: inline
+        script: |
+          curl -F "file=@$(PUBLISH_DIR)/CsvProcessor.ipa" \
+               -F "uKey=2c40f4428b862d8d9e9f3bd850cf9c0e" \
+               -F "_api_key=6878f12ca703e5fb0919dc41468e8d70" \
+               -F "installType=2" \
+               -F "updateDescription=Azure DevOps Build $(Build.BuildId)" \
+               https://www.pgyer.com/apiv2/app/upload
 
     - task: PublishBuildArtifacts@1
       displayName: Publish IPA Artifact
