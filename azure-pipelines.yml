@@ -1,87 +1,114 @@
 trigger:
-  - main
+- main
 
 pool:
-  vmImage: 'macos-14'   # ⭐ 比 macos-15 快且稳定
+  vmImage: macos-14   # 🔴 关键：必须 macos-14 才有 Xcode 16
 
 variables:
-  - group: AppleSigning
-  - name: buildConfiguration
-    value: 'Release'
+  DOTNET_VERSION: '8.0.x'
+  PROJECT_PATH: 'CsvProcessor.csproj'
+  CONFIGURATION: 'Release'
+  RUNTIME_IDENTIFIER: 'ios-arm64'
+  CODESIGN_KEY: 'iPhone Distribution: Forevermark  Marketing(Shanghai ) Limited'
+  PROVISIONING_PROFILE_NAME: 'FM_CLIENTING'
 
 steps:
-- task: DownloadSecureFile@1
-  name: p12Cert
-  inputs:
-    secureFile: 'iOS_Distribution.p12'
-
-- task: DownloadSecureFile@1
-  name: provProfile
-  inputs:
-    secureFile: 'CsvProcessor.mobileprovision'
-
-- task: UseDotNet@2
-  inputs:
-    version: '8.0.x'
-
-- script: |
-    ls -d /Applications/Xcode*.app
-    xcodebuild -version
-  displayName: 'Inspect Xcode'
-
-- script: |
-    sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer
-    xcodebuild -version
+# -----------------------------
+# 1️⃣ 选择 Xcode 16
+# -----------------------------
+- task: Bash@3
   displayName: 'Select Xcode 16'
+  inputs:
+    targetType: inline
+    script: |
+      sudo xcode-select -s /Applications/Xcode_16.app
+      xcodebuild -version
 
-- script: |
-    dotnet workload restore CsvProcessor.csproj
-  displayName: 'Restore MAUI iOS Workloads'
+# -----------------------------
+# 2️⃣ 安装 .NET 8 SDK
+# -----------------------------
+- task: UseDotNet@2
+  displayName: 'Install .NET SDK'
+  inputs:
+    packageType: 'sdk'
+    version: '$(DOTNET_VERSION)'
 
-- script: |
-    dotnet restore CsvProcessor.csproj
-  displayName: 'Restore'
+# -----------------------------
+# 3️⃣ 安装 MAUI Workload
+# -----------------------------
+- task: Bash@3
+  displayName: 'Install MAUI workloads'
+  inputs:
+    targetType: inline
+    script: |
+      dotnet workload install maui ios --ignore-failed-sources
 
-- script: |
-    security create-keychain -p "$(KEYCHAIN_PASSWORD)" build.keychain
-    security default-keychain -s build.keychain
-    security unlock-keychain -p "$(KEYCHAIN_PASSWORD)" build.keychain
+# -----------------------------
+# 4️⃣ 导入 Apple 证书
+# -----------------------------
+- task: Bash@3
+  displayName: 'Install Apple Distribution Certificate'
+  inputs:
+    targetType: inline
+    script: |
+      echo "$IOS_P12_BASE64" | base64 --decode > ios.p12
+      security create-keychain -p "" build.keychain
+      security default-keychain -s build.keychain
+      security unlock-keychain -p "" build.keychain
+      security import ios.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
+      security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
 
-    security import "$(p12Cert.secureFilePath)" \
-      -P "$(P12_PASSWORD)" \
-      -A -t cert -f pkcs12
+# -----------------------------
+# 5️⃣ 安装 Provisioning Profile
+# -----------------------------
+- task: Bash@3
+  displayName: 'Install Provisioning Profile'
+  inputs:
+    targetType: inline
+    script: |
+      mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+      echo "$IOS_MOBILEPROVISION_BASE64" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/FM_CLIENTING.mobileprovision
 
-    security find-identity -v -p codesigning
+# -----------------------------
+# 6️⃣ Restore
+# -----------------------------
+- task: Bash@3
+  displayName: 'dotnet restore'
+  inputs:
+    targetType: inline
+    script: |
+      dotnet restore $(PROJECT_PATH)
 
-    mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-    cp "$(provProfile.secureFilePath)" ~/Library/MobileDevice/Provisioning\ Profiles/
-  displayName: 'Setup Signing'
-  env:
-    KEYCHAIN_PASSWORD: $(KEYCHAIN_PASSWORD)
-    P12_PASSWORD: $(P12_PASSWORD)
-
-- script: |
-    CERT_NAME=$(security find-identity -v -p codesigning \
-      | grep "iPhone Distribution" \
-      | head -1 \
-      | sed 's/.*"\(.*\)".*/\1/')
-
-    echo "使用证书: $CERT_NAME"
-
-    dotnet publish CsvProcessor.csproj \
-      -f net8.0-ios \
-      -c $(buildConfiguration) \
-      -p:RuntimeIdentifier=ios-arm64 \
-      -p:CodesignKey="$CERT_NAME" \
-      -p:CodesignProvision=FM_CLIENTING \
-      -p:BuildIpa=true \
-      -p:MtouchLink=SdkOnly \
-      -p:EnableAssemblyILStripping=false \
-      -p:IpaPackagePath=$(Build.ArtifactStagingDirectory)/CsvProcessor.ipa
+# -----------------------------
+# 7️⃣ Build iOS IPA（核心）
+# -----------------------------
+- task: Bash@3
   displayName: 'Build iOS IPA'
+  inputs:
+    targetType: inline
+    script: |
+      dotnet publish $(PROJECT_PATH) \
+        -f net8.0-ios \
+        -c $(CONFIGURATION) \
+        -r $(RUNTIME_IDENTIFIER) \
+        /p:BuildIpa=true \
+        /p:CodesignKey="$(CODESIGN_KEY)" \
+        /p:CodesignProvision="$(PROVISIONING_PROFILE_NAME)" \
+        /p:MtouchLink=SdkOnly \
+        /p:PublishTrimmed=true
 
+# -----------------------------
+# 8️⃣ 导出 IPA
+# -----------------------------
+- task: CopyFiles@2
+  displayName: 'Collect IPA'
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: '**/*.ipa'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
 - task: PublishBuildArtifacts@1
+  displayName: 'Publish IPA'
   inputs:
     pathToPublish: '$(Build.ArtifactStagingDirectory)'
-    artifactName: 'iOS-IPA'
+    artifactName: 'ios-ipa'
