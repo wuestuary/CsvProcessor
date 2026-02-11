@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-<PropertyGroup>
-    <TargetFramework>net8.0-maccatalyst</TargetFramework>
+  <PropertyGroup>
+    <!-- 多目标：iOS + macOS -->
+    <TargetFrameworks>net8.0-ios;net8.0-maccatalyst</TargetFrameworks>
+    
     <OutputType>Exe</OutputType>
     <RootNamespace>CsvProcessor</RootNamespace>
     <UseMaui>true</UseMaui>
@@ -14,31 +16,16 @@
     <ApplicationVersion>1</ApplicationVersion>
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     
-    <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
-  </PropertyGroup>
-
-  <!-- macOS Release 配置 -->
-  <PropertyGroup Condition="'$(Configuration)'=='Release'">
-    <RuntimeIdentifier>maccatalyst-x64</RuntimeIdentifier>
-<MtouchLink>SdkOnly</MtouchLink>
-    <!-- 或 arm64，或 maccatalyst-x64;maccatalyst-arm64 通用 -->
+    <!-- iOS 配置 -->
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
     
-    <CreatePackage>true</CreatePackage>
-    <UseHardenedRuntime>true</UseHardenedRuntime>
-    <EnableCodeSigning>false</EnableCodeSigning>
-    <EnablePackageSigning>false</EnablePackageSigning>
-    <SelfContained>true</SelfContained>      <!-- 添加 -->
-    <PublishTrimmed>false</PublishTrimmed>   <!-- 修改 -->
-    
-    <CodesignEntitlements>Platforms/MacCatalyst/Entitlements.plist</CodesignEntitlements>
-    
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>partial</TrimMode>
+    <!-- macOS 配置 -->
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <!-- MAUI 资源 -->
   <ItemGroup>
-    <MauiIcon Include="Resources\AppIcon\appicon.png" Color="transparent" />
+    <MauiIcon Include="Resources\AppIcon\appicon.png" Color="#512BD4" />
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
     <MauiImage Include="Resources\Images\*" />
     <MauiFont Include="Resources\Fonts\*" />
@@ -46,9 +33,9 @@
   </ItemGroup>
 
   <ItemGroup>
-<PackageReference Include="Microsoft.Maui.Controls" />
-<PackageReference Include="Microsoft.Maui.Controls.Compatibility" />
-<PackageReference Include="Microsoft.Extensions.Logging.Debug" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.100" />
+    <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.100" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
   </ItemGroup>
 
 </Project>

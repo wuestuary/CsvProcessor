@@ -5,54 +5,87 @@ pool:
   vmImage: 'macOS-14'
 
 variables:
-  buildConfiguration: 'Release'
+  - group: AppleSigning  # 引用变量组
+  - name: buildConfiguration
+    value: 'Release'
 
 steps:
+# 下载证书
+- task: DownloadSecureFile@1
+  name: p12Cert
+  inputs:
+    secureFile: 'iOS_Distribution.p12'  # 你上传的文件名
+
+- task: DownloadSecureFile@1
+  name: provProfile
+  inputs:
+    secureFile: 'CsvProcessor.mobileprovision'  # 你上传的文件名
+
+# 安装 .NET
 - task: UseDotNet@2
   inputs:
     version: '8.0.x'
 
+# 安装 MAUI 工作负载
 - script: |
-    dotnet workload install maui
-    dotnet workload install maui-maccatalyst
+    dotnet workload install maui ios maccatalyst
   displayName: 'Install MAUI Workloads'
 
+# 还原
 - script: dotnet restore CsvProcessor.csproj
-  displayName: 'Restore'
+  displayName: 'Restore Packages'
 
+# 配置签名
+- script: |
+    # 创建临时钥匙串
+    security create-keychain -p "$(KEYCHAIN_PASSWORD)" build.keychain
+    security default-keychain -s build.keychain
+    security unlock-keychain -p "$(KEYCHAIN_PASSWORD)" build.keychain
+    security set-keychain-settings -t 3600 -l build.keychain
+    
+    # 导入证书
+    security import "$(p12Cert.secureFilePath)" -P "$(P12_PASSWORD)" -A -t cert -f pkcs12
+    
+    # 允许钥匙串访问
+    security set-key-partition-list -S apple-tool:,apple: -s -k "$(KEYCHAIN_PASSWORD)" build.keychain
+    
+    # 复制描述文件
+    mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+    cp "$(provProfile.secureFilePath)" ~/Library/MobileDevice/Provisioning\ Profiles/
+    
+    # 查看导入的证书
+    security find-identity -v -p codesigning
+  displayName: 'Setup Signing'
+
+# 构建 iOS
+- script: |
+    dotnet publish CsvProcessor.csproj \
+      -f net8.0-ios \
+      -c $(buildConfiguration) \
+      -p:RuntimeIdentifier=ios-arm64 \
+      -p:CodesignKey="iPhone Distribution: 你的证书名称" \
+      -p:CodesignProvision="你的描述文件名称" \
+      -p:BuildIpa=true \
+      -p:IpaPackagePath=$(Build.ArtifactStagingDirectory)/CsvProcessor.ipa \
+      -p:EnableAssemblyILStripping=false
+  displayName: 'Build iOS'
+  continueOnError: true  # 如果失败继续
+
+# 构建 macOS
 - script: |
     dotnet publish CsvProcessor.csproj \
       -f net8.0-maccatalyst \
       -c $(buildConfiguration) \
       -p:EnableCodeSigning=true \
-      -p:CodesignKey=- \
-      -p:CodesignProvision= \
-      -p:EnablePackageSigning=false \
+      -p:CodesignKey="Developer ID Application: 你的证书名称" \
+      -p:CodesignProvision="你的描述文件名称" \
       -p:CreatePackage=true \
-      -p:PackageFormat=pkg \
-      -p:SelfContained=true \
-      -p:PublishTrimmed=true \
-      -p:TrimMode=partial \
-      -p:OutputPath=./output
-  displayName: 'Build macOS App'
+      -p:OutputPath=$(Build.ArtifactStagingDirectory)/macOS
+  displayName: 'Build macOS'
+  continueOnError: true
 
-- script: |
-    # 创建 pkg 安装包
-    pkgbuild --component ./output/CsvProcessor.app \
-      --install-location /Applications \
-      --identifier com.companyname.csvprocessor \
-      --version 1.0 \
-      ./output/CsvProcessor-1.0.pkg
-  displayName: 'Create PKG Installer'
-
-- script: |
-    echo "=== 最终输出 ==="
-    ls -lh ./output/*.pkg ./output/*.app
-    du -sh ./output/CsvProcessor.app
-    du -sh ./output/CsvProcessor-1.0.pkg
-  displayName: 'Final Check'
-
+# 发布工件
 - task: PublishBuildArtifacts@1
   inputs:
-    pathToPublish: './output'
-    artifactName: 'macOS-App'
+    pathToPublish: '$(Build.ArtifactStagingDirectory)'
+    artifactName: 'iOS-macOS-Apps'
