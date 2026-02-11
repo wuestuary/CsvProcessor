@@ -51,12 +51,33 @@ steps:
   inputs:
     targetType: inline
     script: |
-      echo "$IOS_P12_BASE64" | base64 --decode > ios.p12
-      security create-keychain -p "" build.keychain
+      echo "📦 Decode P12"
+      echo "$IOS_P12_BASE64" | base64 --decode > ios_dist.p12
+
+      echo "🔐 Create keychain"
+      security create-keychain -p buildpass build.keychain
+      security list-keychains -s build.keychain
       security default-keychain -s build.keychain
-      security unlock-keychain -p "" build.keychain
-      security import ios.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
-      security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+      security unlock-keychain -p buildpass build.keychain
+      security set-keychain-settings -t 3600 -u build.keychain
+
+      echo "📜 Import certificate"
+      security import ios_dist.p12 \
+        -k build.keychain \
+        -P "$P12_PASSWORD" \
+        -T /usr/bin/codesign \
+        -T /usr/bin/security
+
+      echo "🔑 Set key partition list"
+      security set-key-partition-list \
+        -S apple-tool:,apple:,codesign: \
+        -s \
+        -k buildpass \
+        build.keychain
+
+      echo "🔍 Verify identities"
+      security find-identity -v -p codesigning build.keychain
+
 
 # -----------------------------
 # 5️⃣ 安装 Provisioning Profile
