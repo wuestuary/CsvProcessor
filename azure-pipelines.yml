@@ -92,12 +92,6 @@ stages:
           echo "使用证书: $CERT_NAME"
           echo "##vso[task.setvariable variable=CERT_NAME]$CERT_NAME"
 
-    - job: Build_iOS
-      displayName: Build iOS IPA
-      timeoutInMinutes: 120
-      steps:
-        # ... 原有步骤
-
         - task: Bash@3
           displayName: Build iOS IPA
           inputs:
