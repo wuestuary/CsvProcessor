@@ -1,14 +1,11 @@
 trigger:
-- main  # 或你自己分支
+- main
 
 pool:
   vmImage: 'macos-latest'
 
 variables:
   BUILD_CONFIGURATION: 'Release'
-  IOS_P12_BASE64: $(IOS_P12_BASE64)   # 你在 Pipeline Variables 设置 base64
-  P12_PASSWORD: $(P12_PASSWORD)       # 你在 Pipeline Variables 设置 P12 密码
-  PROVISIONING_PROFILE_BASE64: $(PROVISIONING_PROFILE_BASE64) # 可选，如果你想自动安装 .mobileprovision
 
 stages:
 - stage: Build_iOS
@@ -22,10 +19,15 @@ stages:
       inputs:
         packageType: 'sdk'
         version: '8.x'
-    
+
+    - script: |
+        echo "☑️ Restore MAUI workloads"
+        dotnet workload restore
+      displayName: 'Restore MAUI Workloads'
+
     - script: |
         echo "📦 Decode and install Apple Distribution Certificate"
-        echo "$IOS_P12_BASE64" | base64 --decode > ios_dist.p12
+        echo "$IOS_P12_BASE64_SECRET" | base64 --decode > ios_dist.p12
 
         echo "🔐 Create and unlock temporary keychain"
         security create-keychain -p buildpass build.keychain
@@ -36,7 +38,7 @@ stages:
         echo "📜 Import certificate and allow codesign access"
         security import ios_dist.p12 \
           -k build.keychain \
-          -P "$P12_PASSWORD" \
+          -P "$P12_PASSWORD_SECRET" \
           -T /usr/bin/codesign \
           -T /usr/bin/security
 
@@ -50,15 +52,14 @@ stages:
         echo "🔍 Verify identities"
         security find-identity -v -p codesigning build.keychain
 
-        # 如果有 Provisioning Profile
-        if [ ! -z "$PROVISIONING_PROFILE_BASE64" ]; then
+        if [ ! -z "$PROVISIONING_PROFILE_BASE64_SECRET" ]; then
           echo "📄 Install provisioning profile"
-          echo "$PROVISIONING_PROFILE_BASE64" | base64 --decode > profile.mobileprovision
+          echo "$PROVISIONING_PROFILE_BASE64_SECRET" | base64 --decode > profile.mobileprovision
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
         fi
       displayName: 'Install iOS Certificate & Provisioning Profile'
-    
+
     - script: |
         echo "🏗 Build the iOS app"
         dotnet build CsvProcessor.csproj \
@@ -72,7 +73,7 @@ stages:
 
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: 'bin/$(BUILD_CONFIGURATION)/net8.0-ios/ios-arm64' # IPA 会在这里
+        PathtoPublish: 'bin/$(BUILD_CONFIGURATION)/net8.0-ios/ios-arm64'
         ArtifactName: 'iOS'
         publishLocation: 'Container'
       displayName: 'Publish IPA Artifact'
