@@ -1,99 +1,95 @@
 trigger:
 - main
 
-variables:
-  - group: AppleSigning   # Your variable group with KEYCHAIN_PASSWORD and P12_PASSWORD
-
 pool:
   vmImage: 'macos-latest'
 
-steps:
+variables:
+- group: AppleSigning
+- name: BUILD_CONFIG
+  value: Release
+- name: PROJECT
+  value: CsvProcessor.csproj
+- name: PUBLISH_DIR
+  value: $(Build.ArtifactStagingDirectory)/IPA
 
-# -------------------------------
-# 1️⃣ Install required .NET workloads
-# -------------------------------
-- task: UseDotNet@2
-  displayName: 'Use .NET SDK 8.0'
-  inputs:
-    packageType: 'sdk'
-    version: '8.0.x'
+stages:
+- stage: BuildAndPublish
+  displayName: Build & Publish iOS IPA
+  jobs:
+  - job: Build_iOS
+    displayName: Build iOS IPA
+    steps:
+    - task: UseDotNet@2
+      displayName: Use .NET 8 SDK
+      inputs:
+        packageType: sdk
+        version: 8.x
+        includePreviewVersions: true
 
-- script: |
-    echo "Restoring MAUI iOS workload..."
-    dotnet workload restore
-  displayName: 'Restore MAUI iOS workload'
+    - task: Bash@3
+      displayName: Install MAUI iOS workload
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Restoring MAUI workloads..."
+          dotnet workload restore
 
-# -------------------------------
-# 2️⃣ Import Apple certificate
-# -------------------------------
-- task: Bash@3
-  displayName: 'Install Apple Certificate'
-  inputs:
-    targetType: 'inline'
-    script: |
-      echo "Create temporary keychain"
-      security create-keychain -p $(KEYCHAIN_PASSWORD) build.keychain
-      security default-keychain -s build.keychain
-      security unlock-keychain -p $(KEYCHAIN_PASSWORD) build.keychain
-      security set-keychain-settings -t 3600 -l build.keychain
+    - task: Bash@3
+      displayName: Install P12 Certificate
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Decoding P12 certificate..."
+          echo $P12_BASE64 | base64 --decode > /tmp/certificate.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security import /tmp/certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
+          security list-keychains -s build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
 
-      echo "Import P12 certificate"
-      echo $(P12_PASSWORD) | base64 --decode > cert.p12
-      security import cert.p12 -k build.keychain -P $(P12_PASSWORD) -T /usr/bin/codesign
-      rm cert.p12
+    - task: Bash@3
+      displayName: Install Provisioning Profile
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Decoding provisioning profile..."
+          echo $PROVISIONING_PROFILE_BASE64 | base64 --decode > /tmp/profile.mobileprovision
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          echo "Provisioning profile installed."
 
-# -------------------------------
-# 3️⃣ Install provisioning profile
-# -------------------------------
-- task: Bash@3
-  displayName: 'Install Provisioning Profile'
-  inputs:
-    targetType: 'inline'
-    script: |
-      mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-      echo $PROVISIONING_PROFILE_BASE64 | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision
+    - task: Bash@3
+      displayName: Build IPA
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Building iOS IPA..."
+          dotnet build $(PROJECT) \
+            -c $(BUILD_CONFIG) \
+            -f net8.0-ios \
+            -p:Platform=iPhone \
+            -p:BuildIpa=true
 
-# -------------------------------
-# 4️⃣ Build the iOS IPA
-# -------------------------------
-- task: Bash@3
-  displayName: 'Build iOS IPA'
-  inputs:
-    targetType: 'inline'
-    script: |
-      dotnet build CsvProcessor.csproj \
-        -c Release \
-        -f net8.0-ios \
-        /p:Platform=iPhone \
-        /p:BuildIpa=true
+    - task: Bash@3
+      displayName: Copy IPA to Publish folder
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Searching for IPA file..."
+          mkdir -p $(PUBLISH_DIR)
+          IPA_FILE=$(find ./bin/$(BUILD_CONFIG)/net8.0-ios -name "*.ipa" | head -n 1)
+          if [ -z "$IPA_FILE" ]; then
+            echo "❌ No IPA file found!"
+            exit 1
+          fi
+          echo "IPA found: $IPA_FILE"
+          cp "$IPA_FILE" $(PUBLISH_DIR)/
 
-# -------------------------------
-# 5️⃣ Copy IPA to Publish folder
-# -------------------------------
-- task: Bash@3
-  displayName: 'Copy IPA to Publish folder'
-  inputs:
-    targetType: 'inline'
-    script: |
-      echo "Searching for IPA file..."
-      IPA_FILE=$(find ./bin/Release/net8.0-ios -name "*.ipa" | head -n 1)
-
-      if [ -z "$IPA_FILE" ]; then
-        echo "❌ No IPA file found!"
-        exit 1
-      fi
-
-      echo "Found IPA: $IPA_FILE"
-      mkdir -p bin/Release/net8.0-ios/Publish
-      cp "$IPA_FILE" bin/Release/net8.0-ios/Publish/
-      echo "✅ IPA copied to Publish folder"
-
-# -------------------------------
-# 6️⃣ Publish IPA as artifact
-# -------------------------------
-- task: PublishBuildArtifacts@1
-  displayName: 'Publish IPA Artifact'
-  inputs:
-    PathtoPublish: 'bin/Release/net8.0-ios/ios-arm64/Publish'
-    ArtifactName: 'iOS-IPA'
-    publishLocation: 'Container'
+    - task: PublishBuildArtifacts@1
+      displayName: Publish IPA Artifact
+      inputs:
+        PathtoPublish: $(PUBLISH_DIR)
+        ArtifactName: iOS_IPA
+        publishLocation: Container
