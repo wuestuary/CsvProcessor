@@ -37,65 +37,65 @@ stages:
         script: |
           dotnet workload restore
 
-- task: Bash@3
-  displayName: Install P12 Certificate (DIAGNOSTIC)
-  inputs:
-    targetType: inline
-    script: |
-      set -e
+    - task: Bash@3
+      displayName: Install P12 Certificate (DIAGNOSTIC)
+      inputs:
+        targetType: inline
+        script: |
+          set -e
 
-      KEYCHAIN_NAME=build.keychain
+          KEYCHAIN_NAME=build.keychain
 
-      echo "🔎 Check env vars"
-      if [ -z "$P12_BASE64" ]; then
-        echo "❌ P12_BASE64 is EMPTY"
-        exit 1
-      fi
-      if [ -z "$P12_PASSWORD" ]; then
-        echo "❌ P12_PASSWORD is EMPTY"
-        exit 1
-      fi
-      if [ -z "$KEYCHAIN_PASSWORD" ]; then
-        echo "❌ KEYCHAIN_PASSWORD is EMPTY"
-        exit 1
-      fi
+          echo "🔎 Check env vars"
+          if [ -z "$P12_BASE64" ]; then
+            echo "❌ P12_BASE64 is EMPTY"
+            exit 1
+          fi
+          if [ -z "$P12_PASSWORD" ]; then
+            echo "❌ P12_PASSWORD is EMPTY"
+            exit 1
+          fi
+          if [ -z "$KEYCHAIN_PASSWORD" ]; then
+            echo "❌ KEYCHAIN_PASSWORD is EMPTY"
+            exit 1
+          fi
 
-      echo "🧹 Delete existing keychain"
-      security delete-keychain "$KEYCHAIN_NAME" || true
+          echo "🧹 Delete existing keychain"
+          security delete-keychain "$KEYCHAIN_NAME" || true
 
-      echo "📦 Decode P12"
-      echo "$P12_BASE64" | base64 --decode > /tmp/cert.p12
-      ls -lh /tmp/cert.p12
+          echo "📦 Decode P12"
+          echo "$P12_BASE64" | base64 --decode > /tmp/cert.p12
+          ls -lh /tmp/cert.p12
 
-      echo "🔍 Validate P12 file"
-      if ! openssl pkcs12 -in /tmp/cert.p12 -nodes -passin pass:"$P12_PASSWORD" > /dev/null 2>&1; then
-        echo "❌ P12 file or password is INVALID"
-        exit 1
-      fi
-      echo "✅ P12 is valid"
+          echo "🔍 Validate P12 file"
+          if ! openssl pkcs12 -in /tmp/cert.p12 -nodes -passin pass:"$P12_PASSWORD" > /dev/null 2>&1; then
+            echo "❌ P12 file or password is INVALID"
+            exit 1
+          fi
+          echo "✅ P12 is valid"
 
-      echo "🔐 Create keychain"
-      security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
-      security default-keychain -s "$KEYCHAIN_NAME"
-      security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          echo "🔐 Create keychain"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security default-keychain -s "$KEYCHAIN_NAME"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
 
-      echo "📥 Import certificate"
-      security import /tmp/cert.p12 \
-        -k "$KEYCHAIN_NAME" \
-        -P "$P12_PASSWORD" \
-        -A \
-        -T /usr/bin/codesign \
-        -T /usr/bin/security
+          echo "📥 Import certificate"
+          security import /tmp/cert.p12 \
+            -k "$KEYCHAIN_NAME" \
+            -P "$P12_PASSWORD" \
+            -A \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
 
-      echo "🔑 Allow codesign access"
-      security set-key-partition-list \
-        -S apple-tool:,apple: \
-        -s \
-        -k "$KEYCHAIN_PASSWORD" \
-        "$KEYCHAIN_NAME"
+          echo "🔑 Allow codesign access"
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_NAME"
 
-      echo "🔍 Verify identity"
-      security find-identity -v -p codesigning
+          echo "🔍 Verify identity"
+          security find-identity -v -p codesigning
 
     - task: Bash@3
       displayName: Install Provisioning Profile
