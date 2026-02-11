@@ -65,24 +65,29 @@ stages:
           cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
 
     - task: Bash@3
-      displayName: Install P12 Certificate (FIXED)
+      displayName: Install P12 Certificate (STABLE)
       inputs:
         targetType: inline
         script: |
           set -e
 
+          KEYCHAIN_NAME=build.keychain
+
+          echo "🧹 Delete existing keychain if any"
+          security delete-keychain "$KEYCHAIN_NAME" || true
+
           echo "📦 Decode P12"
           echo "$P12_BASE64" | base64 --decode > /tmp/cert.p12
 
           echo "🔐 Create keychain"
-          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security list-keychains -s build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
+          security list-keychains -s "$KEYCHAIN_NAME"
+          security default-keychain -s "$KEYCHAIN_NAME"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
 
           echo "📥 Import certificate"
           security import /tmp/cert.p12 \
-            -k build.keychain \
+            -k "$KEYCHAIN_NAME" \
             -P "$P12_PASSWORD" \
             -A \
             -T /usr/bin/codesign \
@@ -94,10 +99,10 @@ stages:
             -S apple-tool:,apple: \
             -s \
             -k "$KEYCHAIN_PASSWORD" \
-            build.keychain
+            "$KEYCHAIN_NAME"
 
-          echo "🔍 Verify identity"
-          security find-identity -v -p codesigning build.keychain
+          echo "🔍 Verify code signing identity"
+          security find-identity -v -p codesigning "$KEYCHAIN_NAME"
 
     - task: Bash@3
       displayName: Collect IPA
