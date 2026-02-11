@@ -24,10 +24,12 @@ steps:
   inputs:
     version: '8.0.x'
 
-# ❌【删除】每次安装 workload（这是慢的一个大头）
-# MAUI & iOS 在 macOS hosted agent 已预装
+- script: |
+    dotnet workload restore CsvProcessor.csproj
+  displayName: 'Restore MAUI iOS Workloads'
 
-- script: dotnet restore CsvProcessor.csproj
+- script: |
+    dotnet restore CsvProcessor.csproj
   displayName: 'Restore'
 
 - script: |
