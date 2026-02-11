@@ -25,6 +25,11 @@ steps:
     version: '8.0.x'
 
 - script: |
+    sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer
+    xcodebuild -version
+  displayName: 'Select Xcode 16'
+
+- script: |
     dotnet workload restore CsvProcessor.csproj
   displayName: 'Restore MAUI iOS Workloads'
 
