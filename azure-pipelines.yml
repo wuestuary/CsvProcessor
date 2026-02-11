@@ -1,64 +1,86 @@
 trigger:
 - main
 
+variables:
+  - group: AppleSigning   # Your variable group with KEYCHAIN_PASSWORD and P12_PASSWORD
+
 pool:
   vmImage: 'macos-latest'
 
-variables:
-- group: AppleSigning
-- name: BUILD_CONFIGURATION
-  value: 'Release'
+steps:
 
-stages:
-- stage: Build_iOS
+# -------------------------------
+# 1️⃣ Install required .NET workloads
+# -------------------------------
+- task: UseDotNet@2
+  displayName: 'Use .NET SDK 8.0'
+  inputs:
+    packageType: 'sdk'
+    version: '8.0.x'
+
+- script: |
+    echo "Restoring MAUI iOS workload..."
+    dotnet workload restore
+  displayName: 'Restore MAUI iOS workload'
+
+# -------------------------------
+# 2️⃣ Import Apple certificate
+# -------------------------------
+- task: Bash@3
+  displayName: 'Install Apple Certificate'
+  inputs:
+    targetType: 'inline'
+    script: |
+      echo "Create temporary keychain"
+      security create-keychain -p $(KEYCHAIN_PASSWORD) build.keychain
+      security default-keychain -s build.keychain
+      security unlock-keychain -p $(KEYCHAIN_PASSWORD) build.keychain
+      security set-keychain-settings -t 3600 -l build.keychain
+
+      echo "Import P12 certificate"
+      echo $(P12_PASSWORD) | base64 --decode > cert.p12
+      security import cert.p12 -k build.keychain -P $(P12_PASSWORD) -T /usr/bin/codesign
+      rm cert.p12
+
+# -------------------------------
+# 3️⃣ Install provisioning profile
+# -------------------------------
+- task: Bash@3
+  displayName: 'Install Provisioning Profile'
+  inputs:
+    targetType: 'inline'
+    script: |
+      mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+      echo $PROVISIONING_PROFILE_BASE64 | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision
+
+# -------------------------------
+# 4️⃣ Build the iOS IPA
+# -------------------------------
+- task: Bash@3
   displayName: 'Build iOS IPA'
-  jobs:
-  - job: Build
-    displayName: 'Build IPA'
-    steps:
+  inputs:
+    targetType: 'inline'
+    script: |
+      dotnet build CsvProcessor.csproj \
+        -c Release \
+        -f net8.0-ios \
+        /p:Platform=iPhone \
+        /p:BuildIpa=true
 
-    # Install .NET SDK
-    - task: UseDotNet@2
-      displayName: 'Use .NET 8 SDK'
-      inputs:
-        packageType: 'sdk'
-        version: '8.0.x'
+# -------------------------------
+# 5️⃣ Copy IPA to Publish folder
+# -------------------------------
+- script: |
+    mkdir -p bin/Release/net8.0-ios/ios-arm64/Publish
+    cp bin/Release/net8.0-ios/ios-arm64/**/*.ipa bin/Release/net8.0-ios/ios-arm64/Publish/
+  displayName: 'Copy IPA to Publish folder'
 
-    # Restore MAUI workloads
-    - script: |
-        echo "Restoring .NET workloads..."
-        dotnet workload restore
-      displayName: 'Restore .NET Workloads'
-
-    # Install iOS certificate
-    - script: |
-        echo "Installing iOS P12 Certificate..."
-        echo "$IOS_P12_BASE64" | base64 --decode > cert.p12
-        security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-        security import cert.p12 -k ~/Library/Keychains/build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
-        security list-keychains -s ~/Library/Keychains/build.keychain
-        security unlock-keychain -p "$KEYCHAIN_PASSWORD" ~/Library/Keychains/build.keychain
-        security set-keychain-settings -t 3600 -l ~/Library/Keychains/build.keychain
-      displayName: 'Install iOS Certificate'
-
-    # Install provisioning profile
-    - script: |
-        echo "Installing Provisioning Profile..."
-        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-        echo "$PROVISIONING_PROFILE_BASE64" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision
-      displayName: 'Install Provisioning Profile'
-
-    # Build the IPA
-    - script: |
-        echo "Building iOS IPA..."
-        dotnet build CsvProcessor.csproj -c $BUILD_CONFIGURATION -f:net8.0-ios /p:Platform=iPhone /p:BuildIpa=true
-      displayName: 'Build iOS IPA'
-
-    # Publish IPA artifact
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: 'bin/Release/net8.0-ios/ios-arm64/Publish'
-        ArtifactName: 'iOS-IPA'
-        publishLocation: 'Container'
-      displayName: 'Publish IPA Artifact'
-
+# -------------------------------
+# 6️⃣ Publish IPA as artifact
+# -------------------------------
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish IPA Artifact'
+  inputs:
+    PathtoPublish: 'bin/Release/net8.0-ios/ios-arm64/Publish'
+    ArtifactName: 'iOS-IPA'
+    publishLocation: 'Container'
