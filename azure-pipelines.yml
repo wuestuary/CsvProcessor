@@ -65,7 +65,7 @@ stages:
           cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
 
     - task: Bash@3
-      displayName: Install P12 Certificate (STABLE)
+      displayName: Install P12 Certificate (FINAL)
       inputs:
         targetType: inline
         script: |
@@ -91,8 +91,7 @@ stages:
             -P "$P12_PASSWORD" \
             -A \
             -T /usr/bin/codesign \
-            -T /usr/bin/security \
-            -T /usr/bin/dotnet
+            -T /usr/bin/security
 
           echo "🔑 Set keychain partition list (CRITICAL)"
           security set-key-partition-list \
