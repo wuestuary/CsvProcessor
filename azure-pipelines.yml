@@ -32,15 +32,27 @@ steps:
   displayName: 'Restore'
 
 - script: |
+    echo "=== 证书文件信息 ==="
+    ls -la "$(p12Cert.secureFilePath)"
+    file "$(p12Cert.secureFilePath)"
+    
+    echo "=== 创建钥匙串 ==="
     security create-keychain -p "$(KEYCHAIN_PASSWORD)" build.keychain
     security default-keychain -s build.keychain
     security unlock-keychain -p "$(KEYCHAIN_PASSWORD)" build.keychain
-    security import "$(p12Cert.secureFilePath)" -P "$(P12_PASSWORD)" -A -t cert -f pkcs12
-    security set-key-partition-list -S apple-tool:,apple: -s -k "$(KEYCHAIN_PASSWORD)" build.keychain
+    
+    echo "=== 导入证书 ==="
+    security import "$(p12Cert.secureFilePath)" -P "$(P12_PASSWORD)" -A -t cert -f pkcs12 || echo "导入失败"
+    
+    echo "=== 查看钥匙串内容 ==="
+    security dump-keychain build.keychain | head -50
+    
+    echo "=== 查找证书 ==="
+    security find-identity -v
     
     mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
     cp "$(provProfile.secureFilePath)" ~/Library/MobileDevice/Provisioning\ Profiles/
-  displayName: 'Setup Signing'
+  displayName: 'Setup Signing Debug'
   env:
     KEYCHAIN_PASSWORD: $(KEYCHAIN_PASSWORD)
     CERTIFICATE_PASSWORD: $(P12_PASSWORD)
