@@ -70,10 +70,23 @@ steps:
 # -------------------------------
 # 5️⃣ Copy IPA to Publish folder
 # -------------------------------
-- script: |
-    mkdir -p bin/Release/net8.0-ios/ios-arm64/Publish
-    cp bin/Release/net8.0-ios/ios-arm64/**/*.ipa bin/Release/net8.0-ios/ios-arm64/Publish/
+- task: Bash@3
   displayName: 'Copy IPA to Publish folder'
+  inputs:
+    targetType: 'inline'
+    script: |
+      echo "Searching for IPA file..."
+      IPA_FILE=$(find ./bin/Release/net8.0-ios -name "*.ipa" | head -n 1)
+
+      if [ -z "$IPA_FILE" ]; then
+        echo "❌ No IPA file found!"
+        exit 1
+      fi
+
+      echo "Found IPA: $IPA_FILE"
+      mkdir -p bin/Release/net8.0-ios/Publish
+      cp "$IPA_FILE" bin/Release/net8.0-ios/Publish/
+      echo "✅ IPA copied to Publish folder"
 
 # -------------------------------
 # 6️⃣ Publish IPA as artifact
