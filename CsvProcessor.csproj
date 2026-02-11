@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- 多目标：iOS + macOS -->
-    <TargetFrameworks>net8.0-ios;net8.0-maccatalyst</TargetFrameworks>
+    <!-- 目标：iOS -->
+    <TargetFrameworks>net8.0-ios</TargetFrameworks>
     
     <OutputType>Exe</OutputType>
     <RootNamespace>CsvProcessor</RootNamespace>
@@ -12,7 +12,7 @@
     <Nullable>enable</Nullable>
     
     <ApplicationTitle>CsvProcessor</ApplicationTitle>
-    <ApplicationId>com.companyname.csvprocessor</ApplicationId>
+    <ApplicationId>com.qishisuzhoukind.org</ApplicationId>
     <ApplicationVersion>1</ApplicationVersion>
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     
