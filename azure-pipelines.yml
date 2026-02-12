@@ -93,22 +93,29 @@ stages:
           echo "##vso[task.setvariable variable=CERT_NAME]$CERT_NAME"
 
     - task: Bash@3
-      displayName: Build iOS IPA
+      displayName: Build iOS App (No Trim)
       inputs:
         targetType: inline
         script: |
           mkdir -p $(PUBLISH_DIR)
           
-          dotnet publish $(PROJECT) \
+          # 先构建，不链接
+          dotnet build $(PROJECT) \
             -f net8.0-ios \
             -c $(BUILD_CONFIG) \
             -p:RuntimeIdentifier=ios-arm64 \
             -p:CodesignKey="$(CERT_NAME)" \
             -p:CodesignProvision="FM_CLIENTING" \
+            -p:MtouchLink=None
+          
+          # 然后打包 IPA
+          dotnet publish $(PROJECT) \
+            -f net8.0-ios \
+            -c $(BUILD_CONFIG) \
+            -p:RuntimeIdentifier=ios-arm64 \
+            --no-build \
             -p:BuildIpa=true \
-            -p:IpaPackagePath=$(PUBLISH_DIR)/CsvProcessor.ipa \
-            -p:PublishTrimmed=true \
-            -p:TrimMode=link  # 改为 link 模式
+            -p:IpaPackagePath=$(PUBLISH_DIR)/CsvProcessor.ipa
 
     - task: Bash@3
       displayName: Upload to Pgyer
