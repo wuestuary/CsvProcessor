@@ -38,86 +38,50 @@ stages:
         script: |
           dotnet workload install maui ios
 
-    # 下载证书
-    - task: DownloadSecureFile@1
-      name: p12Cert
+    # ✅ 使用内置任务安装证书（推荐）
+    - task: InstallAppleCertificate@2
+      displayName: 'Install Apple Certificate'
       inputs:
-        secureFile: 'iOS_Distribution.p12'
+        certSecureFile: 'iOS_Distribution.p12'
+        certPwd: '$(P12_PASSWORD)'
+        keychain: 'temp'
+        # 可选：删除这行如果证书不是从 keychain 导出的
+        # keychainPassword: '$(KEYCHAIN_PASSWORD)'
 
-    # 下载描述文件
-    - task: DownloadSecureFile@1
-      name: provProfile
+    # ✅ 使用内置任务安装描述文件（推荐）
+    - task: InstallAppleProvisioningProfile@1
+      displayName: 'Install Provisioning Profile'
       inputs:
-        secureFile: 'CsvProcessor.mobileprovision'
+        provisioningProfileLocation: 'secureFiles'
+        provProfileSecureFile: 'CsvProcessor.mobileprovision'
 
-    - task: Bash@3
-      displayName: Install Certificate and Profile
-      inputs:
-        targetType: inline
-        script: |
-          set -e
-          KEYCHAIN_NAME=build.keychain
-          
-          # 删除旧钥匙串
-          security delete-keychain "$KEYCHAIN_NAME" 2>/dev/null || true
-          
-          # 创建新钥匙串
-          security create-keychain -p "$(KEYCHAIN_PASSWORD)" "$KEYCHAIN_NAME"
-          security default-keychain -s "$KEYCHAIN_NAME"
-          security unlock-keychain -p "$(KEYCHAIN_PASSWORD)" "$KEYCHAIN_NAME"
-          
-          # 导入证书
-          security import "$(p12Cert.secureFilePath)" \
-            -k "$KEYCHAIN_NAME" \
-            -P "$(P12_PASSWORD)" \
-            -A \
-            -T /usr/bin/codesign
-          
-          # 允许访问
-          security set-key-partition-list \
-            -S apple-tool:,apple: \
-            -s \
-            -k "$(KEYCHAIN_PASSWORD)" \
-            "$KEYCHAIN_NAME"
-          
-          # 复制描述文件
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp "$(provProfile.secureFilePath)" ~/Library/MobileDevice/Provisioning\ Profiles/
-          
-          # 显示可用证书
-          echo "=== 可用证书 ==="
-          security find-identity -v -p codesigning "$KEYCHAIN_NAME"
-          
-          # 提取证书名称
-          CERT_NAME=$(security find-identity -v -p codesigning "$KEYCHAIN_NAME" | grep "iPhone Distribution" | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          echo "使用证书: $CERT_NAME"
-          echo "##vso[task.setvariable variable=CERT_NAME]$CERT_NAME"
+    # 验证安装（调试用，可选）
+    - bash: |
+        echo "=== 证书签名身份 ==="
+        echo "APPLE_CERTIFICATE_SIGNING_IDENTITY: $(APPLE_CERTIFICATE_SIGNING_IDENTITY)"
+        echo "=== 描述文件 UUID ==="
+        echo "APPLE_PROV_PROFILE_UUID: $(APPLE_PROV_PROFILE_UUID)"
+      displayName: 'Check Signing Identity'
 
     - task: Bash@3
-      displayName: Build iOS App (No Trim)
+      displayName: Build iOS App
       inputs:
         targetType: inline
         script: |
           mkdir -p $(PUBLISH_DIR)
           
-          # 先构建，不链接
-          dotnet publish CsvProcessor.csproj \
-            -c Release \
+          # ✅ 关键：使用内置任务提供的变量进行代码签名
+          dotnet publish $(PROJECT) \
+            -c $(BUILD_CONFIG) \
             -f net8.0-ios \
             -p:RuntimeIdentifier=ios-arm64 \
+            -p:ArchiveOnBuild=true \
+            -p:CodesignKey="$(APPLE_CERTIFICATE_SIGNING_IDENTITY)" \
+            -p:CodesignProvision="$(APPLE_PROV_PROFILE_UUID)" \
             -p:BuildIpa=true \
-            -p:Platform=iPhone \
+            -p:IpaPackagePath=$(PUBLISH_DIR)/CsvProcessor.ipa \
             -p:MtouchLink=None \
             -p:EnableAssemblyILStripping=false
-          
-          # 然后打包 IPA
-          dotnet publish $(PROJECT) \
-            -f net8.0-ios \
-            -c $(BUILD_CONFIG) \
-            -p:RuntimeIdentifier=ios-arm64 \
-            --no-build \
-            -p:BuildIpa=true \
-            -p:IpaPackagePath=$(PUBLISH_DIR)/CsvProcessor.ipa
 
     - task: Bash@3
       displayName: Upload to Pgyer
@@ -129,7 +93,7 @@ stages:
                -F "_api_key=6878f12ca703e5fb0919dc41468e8d70" \
                -F "installType=2" \
                -F "updateDescription=Azure DevOps Build $(Build.BuildId)" \
-               https://www.pgyer.com/apiv2/app/upload
+               https://www.pgyer.com/apiv2/app/upload 
 
     - task: PublishBuildArtifacts@1
       displayName: Publish IPA Artifact
