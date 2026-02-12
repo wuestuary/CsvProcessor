@@ -1,6 +1,7 @@
 ﻿using Foundation;
 using UIKit;
 using Microsoft.Maui;
+using Microsoft.Maui.Controls; // 添加这个命名空间
 
 namespace CsvProcessor;
 
@@ -9,7 +10,7 @@ public class AppDelegate : MauiUIApplicationDelegate
 {
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
 
-    // ✅ 正确的 MAUI iOS 方法签名
+    // 正确的 OpenUrl 签名
     [Export("application:openURL:options:")]
     public override bool OpenUrl(UIApplication app, NSUrl url, NSDictionary options)
     {
@@ -28,15 +29,21 @@ public class AppDelegate : MauiUIApplicationDelegate
         string destPath = CopyToAppDirectory(filePath);
         if (destPath == null) return;
 
-        // 通知主页面加载文件
+        // 使用 MainThread 确保在主线程执行
         MainThread.BeginInvokeOnMainThread(async () =>
         {
             // 等待页面加载完成
             await Task.Delay(500);
             
-            if (Application.Current?.Windows.FirstOrDefault()?.Page is MainPage mainPage)
+            // ✅ 修复：使用 Microsoft.Maui.Controls.Application.Current.Windows
+            // 或者使用 IPlatformApplication.Current.Application
+            if (Microsoft.Maui.Controls.Application.Current is Application app)
             {
-                await mainPage.HandleExternalFile(destPath);
+                var window = app.Windows.FirstOrDefault();
+                if (window?.Page is MainPage mainPage)
+                {
+                    await mainPage.HandleExternalFile(destPath);
+                }
             }
         });
     }
