@@ -49,7 +49,8 @@ private const int SM_CYSCREEN = 1; // 屏幕高度
                 {
                     { DevicePlatform.Android, new[] { "text/csv", ".csv" } },
                     { DevicePlatform.WinUI, new[] { ".csv" } },
-                    { DevicePlatform.MacCatalyst, new[] { "public.comma-separated-values-text" } }
+                    { DevicePlatform.MacCatalyst, new[] { "public.comma-separated-values-text" } },
+                    { DevicePlatform.iOS, new[] { "public.comma-separated-values-text" } }  // 关键修复！
                 })
             });
 
@@ -57,8 +58,8 @@ private const int SM_CYSCREEN = 1; // 屏幕高度
             {
                 string targetPath = result.FullPath;
                 
-                // Android 处理 content:// URI
-                if (DeviceInfo.Platform == DevicePlatform.Android && 
+                // iOS 和 Android 处理 content:// URI
+                if ((DeviceInfo.Platform == DevicePlatform.iOS || DeviceInfo.Platform == DevicePlatform.Android) && 
                     result.FullPath.StartsWith("content://", StringComparison.OrdinalIgnoreCase))
                 {
                     using var sourceStream = await result.OpenReadAsync();
@@ -303,9 +304,13 @@ private async Task LoadFileOnly(string filePath)
     }
 
     // 拖放支持
-    public Task HandleFileDrop(string filePath)
+    public async Task HandleFileDrop(string filePath)
     {
-        return LoadFileOnly(filePath);
+        // 确保在主线程执行 UI 更新
+        await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            await LoadFileOnly(filePath);
+        });
     }
     // ======================== 新增：流式转换逻辑 ========================
 private async Task<string> ProcessCsvAsync(string filePath)
