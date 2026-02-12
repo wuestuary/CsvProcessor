@@ -385,5 +385,23 @@ private async Task<string> ProcessCsvAsync(string filePath)
 }
 
 // ===============================================================
+    /// <summary>
+    /// 统一处理外部传入的文件（拖拽、文件关联、iOS/macOS 外部打开）
+    /// </summary>
+    public async Task HandleExternalFile(string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+        {
+            await DisplayAlert("错误", "文件不存在或无法访问", "确定");
+            return;
+        }
 
+        await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            await LoadFileOnly(filePath);
+        });
+    }
+
+    // 保留 HandleFileDrop 作为别名（如果其他地方还在调用）
+    public Task HandleFileDrop(string filePath) => HandleExternalFile(filePath);
 }

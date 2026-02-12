@@ -9,37 +9,53 @@ public class AppDelegate : MauiUIApplicationDelegate
 {
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
 
-    // 处理从其他应用打开的文件（iOS 13+ 使用 SceneDelegate，旧版使用此方法）
-    public override bool OpenUrl(UIApplication application, NSUrl url, string sourceApplication, NSObject annotation)
+    // ✅ 正确的 MAUI iOS 方法签名
+    [Export("application:openURL:options:")]
+    public override bool OpenUrl(UIApplication app, NSUrl url, NSDictionary options)
     {
-        HandleIncomingFile(url);
+        if (url?.Path == null) return false;
+
+        HandleIncomingFile(url.Path);
         return true;
     }
 
     // 处理传入的文件
-    private void HandleIncomingFile(NSUrl url)
+    private void HandleIncomingFile(string filePath)
     {
-        if (url == null) return;
+        if (string.IsNullOrEmpty(filePath)) return;
 
-        // 获取文件路径
-        string filePath = url.Path;
-        
-        // 如果文件在 Inbox 目录（从其他应用分享过来的）
-        if (filePath.Contains("Inbox"))
+        // iOS：复制到应用目录（沙盒要求）
+        string destPath = CopyToAppDirectory(filePath);
+        if (destPath == null) return;
+
+        // 通知主页面加载文件
+        MainThread.BeginInvokeOnMainThread(async () =>
         {
-            // 复制到应用目录以便长期访问
-            string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            string fileName = Path.GetFileName(filePath);
+            // 等待页面加载完成
+            await Task.Delay(500);
+            
+            if (Application.Current?.Windows.FirstOrDefault()?.Page is MainPage mainPage)
+            {
+                await mainPage.HandleExternalFile(destPath);
+            }
+        });
+    }
+
+    private string CopyToAppDirectory(string sourcePath)
+    {
+        try
+        {
+            string documentsPath = FileSystem.AppDataDirectory;
+            string fileName = Path.GetFileName(sourcePath);
             string destPath = Path.Combine(documentsPath, fileName);
             
-            if (File.Exists(filePath))
-            {
-                File.Copy(filePath, destPath, true);
-                
-                // 通知 MAUI 页面加载此文件
-                // 使用 WeakReferenceMessenger 或 Event 通知 MainPage
-                WeakReferenceMessenger.Default.Send(new FileOpenedMessage(destPath));
-            }
+            File.Copy(sourcePath, destPath, true);
+            return destPath;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AppDelegate] 复制文件失败: {ex.Message}");
+            return null;
         }
     }
 }
