@@ -303,15 +303,6 @@ private async Task LoadFileOnly(string filePath)
         return result.Distinct().OrderBy(x => x).ToList();
     }
 
-    // 拖放支持
-    public async Task HandleFileDrop(string filePath)
-    {
-        // 确保在主线程执行 UI 更新
-        await MainThread.InvokeOnMainThreadAsync(async () =>
-        {
-            await LoadFileOnly(filePath);
-        });
-    }
     // ======================== 新增：流式转换逻辑 ========================
 private async Task<string> ProcessCsvAsync(string filePath)
 {
