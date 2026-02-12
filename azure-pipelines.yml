@@ -107,8 +107,7 @@ stages:
             -p:RuntimeIdentifier=ios-arm64 \
             -p:BuildIpa=true \
             -p:Platform=iPhone \
-            -p:PublishTrimmed=false \
-            -p:LinkMode=None \
+            -p:MtouchLink=None \
             -p:EnableAssemblyILStripping=false
           
           # 然后打包 IPA
