@@ -18,6 +18,7 @@ stages:
   displayName: Build & Publish iOS IPA
   jobs:
   - job: Build_iOS
+    timeoutInMinutes: 120
     displayName: Build iOS IPA
     steps:
 
@@ -100,13 +101,15 @@ stages:
           mkdir -p $(PUBLISH_DIR)
           
           # 先构建，不链接
-          dotnet build $(PROJECT) \
+          dotnet publish CsvProcessor.csproj \
+            -c Release \
             -f net8.0-ios \
-            -c $(BUILD_CONFIG) \
             -p:RuntimeIdentifier=ios-arm64 \
-            -p:CodesignKey="$(CERT_NAME)" \
-            -p:CodesignProvision="FM_CLIENTING" \
-            -p:MtouchLink=None
+            -p:BuildIpa=true \
+            -p:Platform=iPhone \
+            -p:PublishTrimmed=false \
+            -p:LinkMode=None \
+            -p:EnableAssemblyILStripping=false
           
           # 然后打包 IPA
           dotnet publish $(PROJECT) \
