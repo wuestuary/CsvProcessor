@@ -66,7 +66,6 @@ stages:
     - task: Bash@3
       displayName: Build iOS App
       env:
-        # ✅ 通过 env 块传递，避免冒号被 MSBuild 误解析
         MY_SIGNING_ID: $(APPLE_CERTIFICATE_SIGNING_IDENTITY)
         MY_PROFILE_ID: $(APPLE_PROV_PROFILE_UUID)
       inputs:
@@ -78,18 +77,23 @@ stages:
           echo "CodesignKey:   '${MY_SIGNING_ID}'"
           echo "ProvisionUUID: '${MY_PROFILE_ID}'"
 
-          # ✅ 用 MSBuild Response File 传递含冒号的参数
-          cat > /tmp/msbuild.rsp <<EOF
-          -p:CodesignKey=${MY_SIGNING_ID}
-          -p:CodesignProvision=${MY_PROFILE_ID}
-          EOF
+          # ✅ 写入 props 文件，完全避开命令行冒号问题
+          PROPS="$(Build.SourcesDirectory)/Directory.Build.props"
+          echo '<Project>' > "$PROPS"
+          echo '  <PropertyGroup>' >> "$PROPS"
+          echo "    <CodesignKey>${MY_SIGNING_ID}</CodesignKey>" >> "$PROPS"
+          echo "    <CodesignProvision>${MY_PROFILE_ID}</CodesignProvision>" >> "$PROPS"
+          echo '  </PropertyGroup>' >> "$PROPS"
+          echo '</Project>' >> "$PROPS"
+          echo "=== 生成的 props 文件 ==="
+          cat "$PROPS"
 
+          # ✅ 不再传 CodesignKey 和 CodesignProvision，由 props 文件提供
           dotnet publish $(PROJECT) \
             -c $(BUILD_CONFIG) \
             -f net8.0-ios \
             -p:RuntimeIdentifier=ios-arm64 \
             -p:ArchiveOnBuild=true \
-            @/tmp/msbuild.rsp \
             -p:BuildIpa=true \
             -p:IpaPackagePath=$(PUBLISH_DIR)/CsvProcessor.ipa \
             -p:MtouchLink=None \
