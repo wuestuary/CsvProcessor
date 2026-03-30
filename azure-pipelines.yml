@@ -65,19 +65,31 @@ stages:
 
     - task: Bash@3
       displayName: Build iOS App
+      env:
+        # ✅ 通过 env 块传递，避免冒号被 MSBuild 误解析
+        MY_SIGNING_ID: $(APPLE_CERTIFICATE_SIGNING_IDENTITY)
+        MY_PROFILE_ID: $(APPLE_PROV_PROFILE_UUID)
       inputs:
         targetType: inline
         script: |
           mkdir -p $(PUBLISH_DIR)
-          
-          # ✅ 关键：使用内置任务提供的变量进行代码签名
+
+          echo "=== 签名信息 ==="
+          echo "CodesignKey:   '${MY_SIGNING_ID}'"
+          echo "ProvisionUUID: '${MY_PROFILE_ID}'"
+
+          # ✅ 用 MSBuild Response File 传递含冒号的参数
+          cat > /tmp/msbuild.rsp <<EOF
+          -p:CodesignKey=${MY_SIGNING_ID}
+          -p:CodesignProvision=${MY_PROFILE_ID}
+          EOF
+
           dotnet publish $(PROJECT) \
             -c $(BUILD_CONFIG) \
             -f net8.0-ios \
             -p:RuntimeIdentifier=ios-arm64 \
             -p:ArchiveOnBuild=true \
-            -p:CodesignKey="$(APPLE_CERTIFICATE_SIGNING_IDENTITY)" \
-            -p:CodesignProvision="$(APPLE_PROV_PROFILE_UUID)" \
+            @/tmp/msbuild.rsp \
             -p:BuildIpa=true \
             -p:IpaPackagePath=$(PUBLISH_DIR)/CsvProcessor.ipa \
             -p:MtouchLink=None \
